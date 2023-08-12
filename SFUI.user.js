@@ -1766,8 +1766,6 @@ function sfui_redrawBattleLogs(wnd) {
   sfui.battleLog(wnd);
 }
 
-let tabIndexCounter = 0;
-
 function sfui_restoreTabulation(wnd) {
   $(wnd.win).find('[tabindex="-1"]').attr('tabindex', null);
 }

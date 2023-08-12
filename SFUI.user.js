@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         StarFederation UI MOD
-// @version      2.4c
+// @version      2.4d
 // @description  Улучшение игрового интерфейса и расширение функционала
 // @author       ElGen ( Discord: Ninada_O_o#1139 )
 // @match        *://*.starfederation.ru/*
@@ -1770,26 +1770,18 @@ function sfui_redrawBattleLogs(wnd) {
 let tabIndexCounter = 0;
 
 function sfui_initTabIndexes(wnd) {
-  if (sfui.settings.removeTabIndex) {
-    $(wnd.win).find('[tabindex]').each((i, e) => {
-      if ($(e).attr('tabindex') == -1) {
-        $(e).attr('tabindex', tabIndexCounter);
-        tabIndexCounter++;
-      }
-    });
-    if (tabIndexCounter > TRLN)
-      tabIndexCounter = 0;
-  }
+  $(wnd.win).find('[tabindex="-1"]').attr('tabindex', null);
 }
 
 function sfui_drawFlyListIDInWindow(wnd) {
-  if (wnd.win.getText() === sfui_language.CHOSE_COMMAND_SHEET) {
-    $('[id^="WndSelect_fleetflylist_row"]').each((i, e) => {
-      let colls = $(e).find('td');
-      let id = colls[4].outerHTML.split('load_flylist(')[1].split(')')[0];
-      colls[1].innerHTML += `<img src="images/icons/i_copy_12.png" height="13" onclick="navigator.clipboard.writeText('${id}'); $(this).fadeOut(100).fadeIn(100);" title="ID: ${id}\nКлик, чтобы скопировать" style="margin-left: 5px;">`;
-    });
-  }
+  if (wnd.win.getText() !== sfui_language.CHOSE_COMMAND_SHEET)
+    return;
+
+  $('[id^="WndSelect_fleetflylist_row"]').each((i, e) => {
+    let colls = $(e).find('td');
+    const id = colls[4].outerHTML.split('load_flylist(')[1].split(')')[0];
+    colls[1].innerHTML += `<img src="images/icons/i_copy_12.png" height="13" onclick="navigator.clipboard.writeText('${id}'); $(this).fadeOut(100).fadeIn(100);" title="ID: ${id}\nКлик, чтобы скопировать" style="margin-left: 5px;">`;
+  });
 }
 
 function sfui_drawFleetIDInWindow(wnd) {
@@ -1830,45 +1822,46 @@ function sfui_mobileOptimization() {
 sfui.endPoint = function (wnd) {
   setTimeout(function () {
     // Немного ждем перед выполнением наших функций, дабы контент прогрузился, иначе не работает.
-    if (wnd && wnd.win) {
-      // Возвращаем в игру возможность табуляции
+    if (!wnd || !wnd.win)
+      return;
+
+    // Возвращаем в игру возможность табуляции
+    if (sfui.settings.removeTabIndex)
       sfui_initTabIndexes(wnd);
 
-      // Боевые логи
-      sfui_redrawBattleLogs(wnd);
+    // Боевые логи
+    sfui_redrawBattleLogs(wnd);
 
-      // Отрисовка номеров полетных листов в окне выбора полетного листа
-      sfui_drawFlyListIDInWindow(wnd);
+    // Отрисовка номеров полетных листов в окне выбора полетного листа
+    sfui_drawFlyListIDInWindow(wnd);
 
-      // Здесь выполняются все модули скрипта
-      // Логика в чем: в точку входа в скрипт передается окно
-      // Мы перебираем в цикле все модули, если по параметрам модуля
-      // он может выполнитя (условия выполнения) то выполняем соответствующий коллбэк
-      // Выполнение коллбэка обернуто в try catch для отлова ошибок
-      // и если один из модулей выдаст ошибку - скрипт не прервет свое выполнение
-      // и другие модули смогут выполнится
-      let wndId = wnd.win.idd;
-      sfui.plugins.forEach(plugin => {
-        try {
-          if (plugin.wndCondition === wndId || plugin.wndCondition === 'AllCalls') {
-            if (plugin.callbackCondition() && sfui.settings[plugin.code] && !plugin.isDisabled) {
-              plugin.callback(wnd);
-            }
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      })
+    // Здесь выполняются все модули скрипта
+    // Логика в чем: в точку входа в скрипт передается окно
+    // Мы перебираем в цикле все модули, если по параметрам модуля
+    // он может выполнитя (условия выполнения) то выполняем соответствующий коллбэк
+    // Выполнение коллбэка обернуто в try catch для отлова ошибок
+    // и если один из модулей выдаст ошибку - скрипт не прервет свое выполнение
+    // и другие модули смогут выполнится
+    sfui.plugins.forEach(plugin => {
+      try {
+        if (plugin.wndCondition !== wnd.win.idd && plugin.wndCondition !== 'AllCalls')
+          return;
 
-      // Выводим номер флота в окне флота
-      sfui_drawFleetIDInWindow(wnd);
+        if (plugin.callbackCondition() && sfui.settings[plugin.code] && !plugin.isDisabled)
+          plugin.callback(wnd);
+      } catch (e) {
+        console.error(e);
+      }
+    });
 
-      // Модифицируем окно новых сообщений
-      //sfui_redrawNewMesagesWindow();
+    // Выводим номер флота в окне флота
+    sfui_drawFleetIDInWindow(wnd);
 
-      // Оптимизация под мобилки
-      sfui_mobileOptimization();
-    }
+    // Модифицируем окно новых сообщений
+    //sfui_redrawNewMesagesWindow();
+
+    // Оптимизация под мобилки
+    sfui_mobileOptimization();
   }, 5);
 }
 

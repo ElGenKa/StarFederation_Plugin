@@ -959,16 +959,11 @@ function sfui_Init() {
     return;
   }
 
-  userScripts.install({
-    'wnd_end_load': sfui.endPoint
-  });
+  userScripts.install({ 'wnd_end_load': sfui.endPoint });
   sfui.plugins.forEach(plugin => { // исполняем модули которые должны быть выполнены при запуске
     try {
-      if (plugin.wndCondition === 'OnLoadScript') {
-        if (plugin.callbackCondition()) {
-          plugin.callback();
-        }
-      }
+      if (plugin.wndCondition === 'OnLoadScript' && plugin.callbackCondition())
+        plugin.callback();
     } catch (e) {
       console.error(e);
     }
@@ -1768,13 +1763,12 @@ sfui.createNewCalcWin = () => {
 }
 
 function sfui_redrawBattleLogs(wnd) {
-  if (sfui.settings.battleLogTable)
-    sfui.battleLog(wnd);
+  sfui.battleLog(wnd);
 }
 
 let tabIndexCounter = 0;
 
-function sfui_initTabIndexes(wnd) {
+function sfui_restoreTabulation(wnd) {
   $(wnd.win).find('[tabindex="-1"]').attr('tabindex', null);
 }
 
@@ -1807,35 +1801,34 @@ function sfui_redrawNewMesagesWindow() {
 }
 
 function sfui_mobileOptimization() {
-  if (sfui_isMobile) {
-    Array.from($("img[src='/images/icons/i_info_12.png']")).forEach(e => {
-      let hoverAttr = e.getAttribute('onmouseenter');
-      e.setAttribute('onclick', hoverAttr);
-    });
-    Array.from($("img[src='/images/icons/flat/i-sub-info-red-12.png']")).forEach(e => {
-      let hoverAttr = e.getAttribute('onmouseenter');
-      e.setAttribute('onclick', hoverAttr);
-    });
-    Array.from($("img[src='/images/icons/flat/i-sub-info-12.png']")).forEach(e => {
-      let hoverAttr = e.getAttribute('onmouseenter');
-      e.setAttribute('onclick', hoverAttr);
-    });
-  }
+  Array.from($("img[src='/images/icons/i_info_12.png']")).forEach(e => {
+    let hoverAttr = e.getAttribute('onmouseenter');
+    e.setAttribute('onclick', hoverAttr);
+  });
+  Array.from($("img[src='/images/icons/flat/i-sub-info-red-12.png']")).forEach(e => {
+    let hoverAttr = e.getAttribute('onmouseenter');
+    e.setAttribute('onclick', hoverAttr);
+  });
+  Array.from($("img[src='/images/icons/flat/i-sub-info-12.png']")).forEach(e => {
+    let hoverAttr = e.getAttribute('onmouseenter');
+    e.setAttribute('onclick', hoverAttr);
+  });
 }
 
 //точка входа в скрипт
 sfui.endPoint = function (wnd) {
+  // Немного ждем перед выполнением наших функций, дабы контент прогрузился, иначе не работает.
   setTimeout(function () {
-    // Немного ждем перед выполнением наших функций, дабы контент прогрузился, иначе не работает.
     if (!wnd || !wnd.win)
       return;
 
     // Возвращаем в игру возможность табуляции
     if (sfui.settings.removeTabIndex)
-      sfui_initTabIndexes(wnd);
+      sfui_restoreTabulation(wnd);
 
     // Боевые логи
-    sfui_redrawBattleLogs(wnd);
+    if (sfui.settings.battleLogTable)
+      sfui_redrawBattleLogs(wnd);
 
     // Отрисовка номеров полетных листов в окне выбора полетного листа
     sfui_drawFlyListIDInWindow(wnd);
@@ -1866,7 +1859,8 @@ sfui.endPoint = function (wnd) {
     //sfui_redrawNewMesagesWindow();
 
     // Оптимизация под мобилки
-    sfui_mobileOptimization();
+    if (sfui_isMobile)
+      sfui_mobileOptimization();
   }, 5);
 }
 
@@ -2180,7 +2174,7 @@ sfui.resRemainTime = function () {
 //Добавляем хинт на время до исчерпания ресурса
 sfui.resAnimateChange = (wnd) => {
   const activeTab = getWindow('WndPlanet').activetab;
-  
+
   let rows = '';
   if (activeTab === 'wp-materials')
     rows = $(`[id^='WndPlanet_wp-materials_row_']`);

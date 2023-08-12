@@ -1402,11 +1402,6 @@ sfui.setCustumBG = function () {
     return;
 
   $("#divCover").css("background-image", 'url(' + sfui.settings.anotherBG + ')');
-  setTimeout(sfui.resizeBG, 1000);
-}
-
-//Устанавливаем картинку по размеру окна
-sfui.resizeBG = function () {
   $("#divCover").css("background-size", window.innerWidth + 'px ' + window.innerHeight + 'px');
 }
 

@@ -2170,8 +2170,11 @@ sfui.resRemainTime = function () {
     const timeRemain = -(amount / demand);
     const hintStr = `${sfui_language.RES_TIME_REMAIN} ${sfui_formatTimeFromHours(timeRemain)}`;
     dataRows[i].setAttribute('data-hint', hintStr);
+    dataRows[i].childNodes[0].style.pointerEvents = 'none';
     dataRows[i + 1].setAttribute('data-hint', hintStr);
+    dataRows[i + 1].childNodes[0].style.pointerEvents = 'none';
     dataRows[i + 2].setAttribute('data-hint', hintStr);
+    dataRows[i + 2].childNodes[0].style.pointerEvents = 'none';
   }
 }
 //Добавляем хинт на время до исчерпания ресурса
@@ -2222,6 +2225,7 @@ sfui.resAnimateChange = (wnd) => {
     targetValues[3].childNodes[0].style.pointerEvents = 'none';
     targetValues[4].childNodes[0].innerHTML = sfapi.wrapToGameValue(massRate * newAmountVal);
     targetValues[4].childNodes[0].style.pointerEvents = 'none';
+    targetValues[5].childNodes[0].style.pointerEvents = 'none';
   });
 }
 

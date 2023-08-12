@@ -1398,12 +1398,11 @@ function sfui_hidePreloader() {
 
 //Установка кастомного фона
 sfui.setCustumBG = function () {
-  if (sfui.settings.anotherBG && sfui.settings.usedAnotherBG) {
-    $("#divCover").css("background-image", 'url(' + sfui.settings.anotherBG + ')');
-    setInterval(() => {
-      sfui.resizeBG();
-    }, 1000);
-  }
+  if (!sfui.settings.anotherBG || !sfui.settings.usedAnotherBG)
+    return;
+
+  $("#divCover").css("background-image", 'url(' + sfui.settings.anotherBG + ')');
+  setTimeout(sfui.resizeBG, 1000);
 }
 
 //Устанавливаем картинку по размеру окна

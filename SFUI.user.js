@@ -155,7 +155,7 @@ let sfui_language = {
     en: 'Trln',
     ru: 'трлн'
   },
-  RES_TIME: {
+  RES_TIME_REMAIN: {
     en: 'Enough resources for',
     ru: 'Ресурса хватит еще на'
   },
@@ -764,9 +764,6 @@ const codeSortPlugins = {
   },
 }
 
-// Константа триллиона ровняющаяся 1 000 000 000 000
-const TRLN = Math.pow(1000, 4);
-
 sfapi.fetch = (url, options = {}) => {
   let basicOptions = {
     "headers": {
@@ -786,77 +783,85 @@ sfapi.fetch = (url, options = {}) => {
   return fetch(url, basicOptions);
 }
 
-// Парсим строку (циферную) в числовое значение
-sfapi.parseIntExt = (value) => {
-  if (value) {
-    let baseString = value.toString();
-    let multiply = 1;
-    if (baseString.indexOf(sfui_language.TRLN) + 1) {
-      multiply = TRLN;
-      baseString = baseString.split(sfui_language.TRLN)[0];
-    }
-    baseString = parseInt(parseFloat(baseString.replaceAll(' ', '')) * multiply);
-    return baseString;
-  } else {
-    return 0;
-  }
-}
 
-// Парсим строку (циферную) в числовое значение с плавающей запятой
-sfapi.parseFloatExt = (value) => {
-  if (value) {
-    let baseString = value.toString();
-    let multiply = 1;
-    if (baseString.indexOf(sfui_language.TRLN) + 1) {
-      multiply = TRLN;
-      baseString = baseString.split(sfui_language.TRLN)[0];
-    }
-    baseString = parseFloat(baseString.replaceAll(' ', '')) * multiply;
-    return baseString;
-  } else {
-    return 0;
-  }
-}
+const TRLN = 1_000_000_000_000;
 
-// Преобразовываем число в строку ( 1 000 000 000 000 => 1.000 трлн )
-sfapi.parseToIntGame = (value) => {
-  if (value) {
-    let valInt = value;
-    let arrayValue = [];
-    if (valInt > TRLN) {
-      arrayValue = (valInt / TRLN).toFixed(3).split('.');
-      let fullValue = sfapi.tlsEn(valInt);
-      arrayValue[0] = `<span data-hint="${fullValue}" class="v-norm">${arrayValue[0]}.</span>`;
-      arrayValue[1] = `<span data-hint="${fullValue}" class="v-norm-dec">${arrayValue[1]} <span data-hint="${fullValue}" class="v-norm"> ${sfui_language.TRLN}</span></span>`;
-      valInt = arrayValue[0] + arrayValue[1];
-    } else {
-      valInt = sfapi.tlsEn(valInt);
-      valInt = `<span data-hint="${valInt}" class="v-norm">${valInt}</span>`;
-    }
-    return valInt;
-  } else {
+sfapi.parseIntExt = (valueStr) => {
+  if (typeof valueStr !== 'string')
+    throw 'sfapi.parseIntExt: invalid argument type';
+
+  let value = valueStr.replaceAll(' ', '').split(sfui_language.TRLN);
+  const isTrlnFound = value.length > 1;
+  value = value[0];
+
+  if (isTrlnFound)
+    return Math.trunc(parseFloat(value) * sfui_language.TRLN);
+
+  return parseInt(value);
+}
+sfapi.parseFloatExt = (valueStr) => {
+  if (typeof valueStr !== 'string')
+    throw 'sfapi.parseFloatExt: invalid argument type';
+
+  let value = valueStr.replaceAll(' ', '').split(sfui_language.TRLN);
+  const isTrlnFound = value.length > 1;
+  value = parseFloat(value[0]);
+
+  return isTrlnFound ? value * sfui_language.TRLN : value;
+}
+// Convert normal value to in-game format (converts to TRLN format is necessary)
+sfapi.toGameValueStr = (value) => {
+  if (typeof value !== 'number')
+    throw 'sfapi.toGameValueStr: invalid argument type';
+
+  if (value < TRLN)
+    return sfapi.tlsRu2(value);
+
+  const valueParts = (value / TRLN).toFixed(3).split('.');
+  return `${sfapi.tlsRu2(valueParts[0])}.${valueParts[1]}`;
+}
+// Оборачиваем число в span, согласно игровому дизайну
+sfapi.wrapToGameValue = (value) => {
+  if (typeof value !== 'number')
+    throw 'sfapi.wrapToGameValue: invalid argument type';
+
+  if (value === 0)
     return '0';
-  }
+
+  const locValue = sfapi.tlsRu2(value);
+  if (value < TRLN)
+    return `<span data-hint="${locValue}" class="v-norm">${locValue}</span>`;
+
+  const valueParts = sfapi.toGameValueStr(value).split('.');
+  return `<span data-hint="${locValue}" class="v-norm">${valueParts[0]}.</span>\
+    <span data-hint="${locValue}" class="v-norm-dec">${valueParts[1]}\
+    <span data-hint="${locValue}" class="v-norm"> ${sfui_language.TRLN}</span></span>`;
+}
+sfui.sumAndWrapGameInts = (value1, value2) => {
+  const newValue = sfapi.parseIntExt(value1) + sfapi.parseIntExt(value2);
+  return sfapi.wrapToGameValue(newValue);
 }
 
-sfui.sumGameInt = (value, amount) => {
-  let newValue = sfapi.parseIntExt(value) + sfapi.parseIntExt(amount);
-  return sfapi.parseToIntGame(newValue);
-}
-
-// toLocateString
-// Позволяет сделать красивое число с пробелами между разрядами
-// Использует не разрывной пробел между ними
+// toLocaleString - форматирует число согласно текущему языковому формату пользователя
 sfapi.tls = (object) => {
+  if (sfui_playerInfo.language === 'en')
+    return sfapi.tlsEn(object);
+
+  return sfapi.tlsRn(object);
+}
+// Использует неразрывной пробел между разрядами
+sfapi.tlsRu = (object) => {
   return object.toLocaleString('ru');
 }
-
-// Тоже самое, что и предыдущее, но вместо неразрывных пробелов будут обычные
-sfapi.tlsEn = (object) => {
-  return object.toLocaleString('en-US').replaceAll(',', ' ');
+// Использует обычный пробел между разрядами
+sfapi.tlsRu2 = (object) => {
+  return object.toLocaleString('ru').replaceAll(' ', ' ');
 }
-
-// Тоже самое, что и предыдущее, но разделителем служит апостроф (стандарт Швейцарии)
+// Использует запятую между разрядами
+sfapi.tlsEn = (object) => {
+  return object.toLocaleString('en-US');
+}
+// Использует апостроф между разрядами (стандарт Швейцарии)
 sfapi.tlsCh = (object) => {
   return object.toLocaleString('de-CH');
 }
@@ -1450,8 +1455,8 @@ sfui.createNewCalcWin = () => {
       $(wnd).find(".calcOldResult").find('div').css('display', 'none');
     }
 
-    $(wnd).find(".calcCurrentValue input").val(sfapi.tlsEn(wnd.calc.currentValue));
-    $(wnd).find(".calcOldResult span").text(sfapi.tlsEn(wnd.calc.prevValue));
+    $(wnd).find(".calcCurrentValue input").val(sfapi.tlsRu2(wnd.calc.currentValue));
+    $(wnd).find(".calcOldResult span").text(sfapi.tlsRu2(wnd.calc.prevValue));
   }
   wnd.calc.updateInInput = () => {
     let currVal = $(wnd).find(".calcCurrentValue input").val();
@@ -2083,7 +2088,7 @@ sfui.setMaxLevelsBuilds = function () {
   }
 }
 
-//Добавляем в хинт инфу, сколько таких построек влезет
+//Добавляем в хинт инфу, на сколько хватит построек
 sfui.addMaxBuildsCount = function () {
   Array.from($(getWindow("WndPlanet").win).find(`button:contains('${sfui_language.BUILD}')`)).forEach((element) => {
     if (element.nextElementSibling.children[0].innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) + 1 || element.nextElementSibling.children[0].innerText.indexOf(sfui_language.ORBITAL_PLATFORMS) + 1) {
@@ -2096,7 +2101,7 @@ sfui.addMaxBuildsCount = function () {
   });
 }
 
-//Добавляем в хинт инфу, сколько таких построек влезет
+//Добавляем в хинт инфу, на сколько хватит кораблей
 sfui.addMaxShipsCount = function () {
   Array.from($(getWindow("WndPlanet").win).find(`button:contains('${sfui_language.BUILD}')`)).forEach((element) => {
     let minShips = Number.MAX_SAFE_INTEGER;
@@ -2148,32 +2153,76 @@ sfui.externalCommandsInEmpire = function () {
 }
 
 //Добавляем хинт на время до исчерпания ресурса
-sfui.timeRes = function () {
-  //Refactor by woodser
-  let rowName = getWindow('WndPlanet').activetab;
-  if (rowName == "wp-materials" || rowName == "wp-resourses") {
-    //Проверям таб
-    let rows = $("tr[id^='WndPlanet_" + rowName + "_row_']");
-    let dataRows = rows.find('.value.text12');
-    for (let i = 0; i < dataRows.length; i = i + 3) {
+sfui.resRemainTime = function () {
+  const activeTab = getWindow('WndPlanet').activetab;
+  if (activeTab != "wp-materials" && activeTab != "wp-resourses")
+    return;
 
-      let existence = dataRows[i];
-      let demand = dataRows[i + 2];
-      existence = existence.innerText.replaceAll(" ", '');
-      demand = demand.innerText.replaceAll(" ", '');
+  let rows = $("tr[id^='WndPlanet_" + activeTab + "_row_']");
+  let dataRows = rows.find('.value.text12');
+  for (let i = 0; i < dataRows.length; i += 3) {
+    const demand = sfapi.parseIntExt(dataRows[i + 2].innerText);
 
-      if (existence.indexOf(sfui_language.TRLN) + 1) {
-        existence = sfapi.parseIntExt(existence);
-      }
-      if (demand.indexOf(sfui_language.TRLN) + 1) {
-        demand = sfapi.parseIntExt(demand);
-      }
-      let timeToOut = (existence / demand) * -1;
-      if (timeToOut > 0) {
-        $(dataRows[i]).attr('data-hint', `${sfui_language.RES_TIME} ${sfui_formatTimeFromHours(timeToOut)}`);
-      }
-    }
+    if (demand >= 0)
+      continue;
+
+    const amount = sfapi.parseIntExt(dataRows[i].innerText);
+    const timeRemain = -(amount / demand);
+    const hintStr = `${sfui_language.RES_TIME_REMAIN} ${sfui_formatTimeFromHours(timeRemain)}`;
+    dataRows[i].setAttribute('data-hint', hintStr);
+    dataRows[i + 1].setAttribute('data-hint', hintStr);
+    dataRows[i + 2].setAttribute('data-hint', hintStr);
   }
+}
+//Добавляем хинт на время до исчерпания ресурса
+sfui.resAnimateChange = (wnd) => {
+  const activeTab = getWindow('WndPlanet').activetab;
+  
+  let rows = '';
+  if (activeTab === 'wp-materials')
+    rows = $(`[id^='WndPlanet_wp-materials_row_']`);
+  else if (activeTab === 'wp-resourses')
+    rows = $(`[id^='WndPlanet_wp-resourses_row_']`);
+  else return;
+
+  Array.from(rows).forEach((e, i) => {
+    let targetValues = $(e).find('td');
+    let amountData = '';
+    let massData = '';
+    let expenseData = '';
+
+    if ($(targetValues[5]).find('span.v-norm').data('hint'))
+      expenseData = $(targetValues[5]).find('span.v-norm').data('hint');
+    else
+      expenseData = targetValues[5].innerText;
+
+    const expenseVal = sfapi.parseFloatExt(expenseData) / 3600;
+    if (!expenseVal)
+      return;
+
+    if ($(targetValues[3]).find('span.v-norm').data('hint'))
+      if ($(targetValues[3]).find('span.v-norm')[0].dataset.hint)
+        amountData = $(targetValues[3]).find('span.v-norm')[0].dataset.hint;
+      else
+        amountData = $(targetValues[3]).find('span.v-norm')[1].dataset.hint;
+    else
+      amountData = targetValues[3].innerText;
+
+    if ($(targetValues[4]).find('span.v-norm').data('hint'))
+      if ($(targetValues[4]).find('span.v-norm')[0].dataset.hint)
+        massData = $(targetValues[4]).find('span.v-norm')[0].dataset.hint;
+      else
+        massData = $(targetValues[4]).find('span.v-norm')[1].dataset.hint;
+    else
+      massData = targetValues[4].innerText;
+
+    const newAmountVal = Math.round(sfapi.parseFloatExt(amountData) + expenseVal);
+    const massRate = Math.round(sfapi.parseFloatExt(massData) / sfapi.parseFloatExt(amountData));
+    targetValues[3].childNodes[0].innerHTML = sfapi.wrapToGameValue(newAmountVal);
+    targetValues[3].childNodes[0].style.pointerEvents = 'none';
+    targetValues[4].childNodes[0].innerHTML = sfapi.wrapToGameValue(massRate * newAmountVal);
+    targetValues[4].childNodes[0].style.pointerEvents = 'none';
+  });
 }
 
 //Посчитываем занятый трюм флота
@@ -2222,26 +2271,24 @@ sfui.calcUsedStorageInFleet = function () {
   }
 }
 
-// Сортировка УД во флоте и сразу потом на планете
+// Сортировка УД во флоте
 sfui.udShuffleFleet = (wnd) => {
   if (wnd.win.idd === 'WndFleet' && wnd.activetab === 'main-options') {
     sfui.udShuffle(wnd, 'WndFleet');
   }
 }
-
+// Сортировка УД на планете
 sfui.udShufflePlanet = (wnd) => {
   if (wnd.win.idd === 'WndPlanet' && wnd.activetab === 'co-additional') {
     sfui.udShuffle(wnd, 'WndPlanet');
   }
 }
-
-// Сортировка УД во флоте и сразу потом на планете
+// Сортировка УД в магазине Федерации
 sfui.udShuffleTrade = (wnd) => {
   if (wnd.win.idd === 'WndTrade' && wnd.activetab === 'byfederation-devices') {
     sfui.udShuffle(wnd, 'WndTrade');
   }
 }
-
 // Сама процедура сортировки
 sfui.udShuffle = (wnd, targetWnd) => {
   if (targetWnd === 'WndFleet') {
@@ -3215,7 +3262,7 @@ sfui.plugins.push({
   type: 'bool',
   title: sfui_language.ENOUGH_RES,
   wndCondition: 'WndPlanet',
-  callback: sfui.timeRes,
+  callback: sfui.resRemainTime,
   callbackCondition: () => {
     return 1;
   },
@@ -3306,50 +3353,7 @@ sfui.plugins.push({
   wndCondition: 'WndPlanet',
   callback: () => {
     clearInterval(getWindow('WndPlanet').timerUpdate);
-    getWindow('WndPlanet').timerUpdate = setInterval(() => {
-      let activeTab = getWindow('WndPlanet').activetab;
-      if (activeTab === 'wp-materials' || activeTab === 'wp-resourses') {
-        let rows = $(`[id^='WndPlanet_wp-resourses_row_']`);
-        if (rows.length === 0)
-          rows = $(`[id^='WndPlanet_wp-materials_row_']`);
-        Array.from(rows).forEach((e, i) => {
-          let targetValues = $(e).find('td');
-          let amountData = '';
-          let massData = '';
-          let expenseData = '';
-          if ($(targetValues[5]).find('span.v-norm').data('hint')) {
-            expenseData = $(targetValues[5]).find('span.v-norm').data('hint');
-          } else {
-            expenseData = targetValues[5].innerText;
-          }
-          let expenseVal = sfapi.parseFloatExt(expenseData) / 3600;
-          if (expenseVal == 0)
-            return;
-          if ($(targetValues[3]).find('span.v-norm').data('hint')) {
-            if ($(targetValues[3]).find('span.v-norm')[0].dataset.hint)
-              amountData = $(targetValues[3]).find('span.v-norm')[0].dataset.hint;
-            else
-              amountData = $(targetValues[3]).find('span.v-norm')[1].dataset.hint;
-          } else {
-            amountData = targetValues[3].innerText;
-          }
-          if ($(targetValues[4]).find('span.v-norm').data('hint')) {
-            if ($(targetValues[4]).find('span.v-norm')[0].dataset.hint)
-              massData = $(targetValues[4]).find('span.v-norm')[0].dataset.hint;
-            else
-              massData = $(targetValues[4]).find('span.v-norm')[1].dataset.hint;
-          } else {
-            massData = targetValues[4].innerText;
-          }
-          let newAmountVal = Math.round(sfapi.parseFloatExt(amountData) + expenseVal);
-          let massRate = Math.round(sfapi.parseFloatExt(massData) / sfapi.parseFloatExt(amountData));
-          $(targetValues[3]).find('span').remove();
-          $(targetValues[4]).find('span').remove();
-          $(targetValues[3]).append(sfapi.parseToIntGame(newAmountVal));
-          $(targetValues[4]).append(sfapi.parseToIntGame(massRate * newAmountVal));
-        });
-      }
-    }, 3000);
+    getWindow('WndPlanet').timerUpdate = setInterval(sfui.resAnimateChange, 3000);
   },
   callbackCondition: () => {
     return 1
@@ -5352,7 +5356,7 @@ sfui.diffCheckProjects = () => {
         let lvl = keyLvl.replace("l", "");
         html += `<div class='textcontainer-d' style=''>
         <div class="noselect" style="display: inline-block;width:12px;height:12px;border:1px solid ${needModeles[keyModule].race.color};background:${needModeles[keyModule].race.color};"><img oncontextmenu="return false" class="noselect" style="cursor:pointer;opacity:0.75;filter:alpha(opacity=75);" data-hint="" width="12px" height="12px" src="/images/productions/${moduleID}-16.png" onclick="sound_click(1);getWindow(&quot;WndHelp&quot;).show(&quot;id=Productions-${moduleID}:9&amp;level=${lvl}&quot;);"></div>
-        <span style='font-size: 11px!important'><span style='color:${needModeles[keyModule].race.color}'>${needModeles[keyModule].name} ур.${Number(lvl).toLocaleString('de-CH')}</span> x<span style='color:#73c95f'>${needModeles[keyModule].lvls[keyLvl].count}</span></span></div>`;
+        <span style='font-size: 11px!important'><span style='color:${needModeles[keyModule].race.color}'>${needModeles[keyModule].name} ${sfapi.tlsCh(Number(lvl))}</span> x<span style='color:#73c95f'>${needModeles[keyModule].lvls[keyLvl].count}</span></span></div>`;
         queries.push(`&prodtype=1&prodtype_new_value=false&raceid=${needModeles[keyModule].race.id}&raceid_new_value=false&prodid=${moduleID}&prodid_new_value=false&level=${lvl}&size=${needModeles[keyModule].lvls[keyLvl].count}`);
       }
     }

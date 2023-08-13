@@ -52,6 +52,14 @@ let sfui_isMobile = false;
 
 // Языковые пакеты
 let sfui_language = {
+  TEXT_MISSILE_PENETRATION: {
+    ru: 'Пробитие отклонения ракет',
+    en: 'Missile deflection penetration'
+  },
+  LOADING: {
+    ru: 'Загрузка',
+    en: 'Loading'
+  },
   PLANET: {
     ru: 'Планета',
     en: 'Planet'
@@ -4467,10 +4475,11 @@ sfui.callResizeWndPlayersChat = () => {
 sfui.callResizeWndShipProject = () => {
   $('#WndShipProject_project_create').css('top', '').css('bottom', '1px');
   $("#WndShipProject_project").css('height', 'calc(100% - 126px)');
-  $("#WndShipProject_project_items").css('height', '100%');
-  $("#WndShipProject_project_items").find('.dhxcont_acc_dhx_web').parent().css('height', 'calc(100% - 132px)');
-  $("#WndShipProject_project_items").find('.dhxcont_acc_dhx_web').css('height', 'calc(100% - 34px)');
-  $("#WndShipProject_project_items").find('.dhxcont_acc_dhx_web').find('div[ida="dhxMainCont"]').css('height', '100%');
+  let projectItems = $("#WndShipProject_project_items");
+  projectItems.css('height', '100%');
+  projectItems.find('.dhxcont_acc_dhx_web').parent().css('height', 'calc(100% - 132px)');
+  projectItems.find('.dhxcont_acc_dhx_web').css('height', 'calc(100% - 34px)');
+  projectItems.find('.dhxcont_acc_dhx_web').find('div[ida="dhxMainCont"]').css('height', '100%');
 }
 
 sfui.callResizeWndFleet = () => {
@@ -4512,20 +4521,22 @@ sfui.callResizeWndFleet = () => {
     case 'main-settings':
       tabContentZone.find('[tab_id="main-settings"]').css('height', 'calc(100% - 10px)');
       let conteinerLeft = $("#WndFleet_main-settings").find('.textcontainer-l').first().css('height', '100%').find('div.textbox-d.pt0.w410.h420.scrlYa.mt2').css('cssText', 'height: calc(100% - 110px)!important;');
-      $('#WndFleet_container').find('.controlbox.controls-center-row').last().css('top', '').css('bottom', '0');
+      targetMain.find('.controlbox.controls-center-row').last().css('top', '').css('bottom', '0');
       $('#WndFleet_fleet_groups').css('cssText', 'height: calc(100% - 430px)!important');
-      $('#WndFleet_container').find('.textcontainer-l.controls-center-col-top').css('height', '100%');
+      targetMain.find('.textcontainer-l.controls-center-col-top').css('height', '100%');
       break;
     case 'main-options':
       tabContentZone.find('[tab_id="main-options"]').css('height', 'calc(100% - 6px)');
       $("#WndFleet_battle_tactic_form").css('height', 'calc(100% - 30px)')
       $("#WndFleet_battle_tactic_frame.controls-center-col").css('height', '100%');
-      $('#WndFleet_main-options .textcontainer-l').eq(0).css('height', 'calc(100% - 134px)');
-      $('#WndFleet_main-options .textcontainer-l').eq(0).find('.textbox-d').removeClass('h190').css('height', 'calc(100% - 180px)');
-      $('#WndFleet_main-options .textcontainer-l').eq(1).css('top', '').css('bottom', '2px');
-      $('#WndFleet_main-options .textcontainer-l').eq(2).css('height', 'calc(100% - 2px)');
-      $("#WndFleet_fleet_device_settings_frame .controls-center-col-top").first().css('height', 'calc(100% - 69px)');
-      $("#WndFleet_fleet_device_settings_frame .controls-center-col-top").first().find('.textbox-d').css('height', 'calc(100% - 100px)').removeClass('h320');
+      let textContainer = $('#WndFleet_main-options .textcontainer-l');
+      textContainer.eq(0).css('height', 'calc(100% - 134px)');
+      textContainer.eq(0).find('.textbox-d').removeClass('h190').css('height', 'calc(100% - 180px)');
+      textContainer.eq(1).css('top', '').css('bottom', '2px');
+      textContainer.eq(2).css('height', 'calc(100% - 2px)');
+      let topCol = $("#WndFleet_fleet_device_settings_frame .controls-center-col-top");
+      topCol.first().css('height', 'calc(100% - 69px)');
+      topCol.first().find('.textbox-d').css('height', 'calc(100% - 100px)').removeClass('h320');
       break;
     case 'main-params':
       tabContentZone.find('[tab_id="main-params"]').css('height', 'calc(100% - 6px)');
@@ -4564,9 +4575,10 @@ let allTempBlocks = [];
 class TempDiv {
   constructor(id, res, inTable = false) {
     this.res = res;
-    if ($("#" + id).length > 0) {
-      delete $("#" + id)[0].linkToObject;
-      $("#" + id).remove();
+    let obj = $("#" + id);
+    if (obj.length > 0) {
+      delete obj[0].linkToObject;
+      obj.remove();
     }
     let tmpContainer = document.createElement('div');
     tmpContainer.id = id;
@@ -4589,18 +4601,19 @@ class TempDiv {
 sfui.calculateRockets = function () {
   let findingTR = $("#WndFleetInfo_container tr[class='h24'] .cell_hdr.left4.text12");
   let ships = [];
-  $("#CalculateRocketsButton").text("загрузка...");
+  $("#CalculateRocketsButton").text(sfui_language.LOADING);
   let defPenetration = localStorage.getItem("r_penetration") || 100;
-  let penetration = prompt('Пробитие отклонения ракет:', defPenetration);
+  let penetration = prompt(sfui_language.TEXT_MISSILE_PENETRATION + ":", defPenetration);
 
   let prsModifaer = 1;
-  if ($("#WndFleetInfo_container").text().toLowerCase().indexOf(getUdNameByID(465)) + 1) {
+  let container = $("#WndFleetInfo_container");
+  if (container.text().toLowerCase().indexOf(getUdNameByID(465)) + 1) {
     prsModifaer = 1.25;
     //Фазовый деструктор
     //Протонный дефлектор
     if (
-      $("#WndFleetInfo_container").text().toLowerCase().indexOf(getUdNameByID(467)) + 1 &&
-      $("#WndFleetInfo_container").text().toLowerCase().indexOf(getUdNameByID(466)) + 1
+      container.text().toLowerCase().indexOf(getUdNameByID(467)) + 1 &&
+      container.text().toLowerCase().indexOf(getUdNameByID(466)) + 1
     ) {
       prsModifaer = 1.5;
     }
@@ -4668,7 +4681,7 @@ sfui.switchModules = function (elm) {
 sfui.calculateFleetInfo = function () {
   let findingTR = $("#WndFleetInfo_container tr[class='h24'] .cell_hdr.left4.text12");
   let ships = [];
-  $("#CalculateFleetButton").text("загрузка...");
+  $("#CalculateFleetButton").text(sfui_language.LOADING);
   if (dhxWins.window("CalculateFleetButton") != null) dhxWins.window("CalculateFleetButton").close();
   dhxWins.createWindow("CalculateFleetButton", 300, 100, 1200, 600);
   let windowCalc = dhxWins.window("CalculateFleetButton");

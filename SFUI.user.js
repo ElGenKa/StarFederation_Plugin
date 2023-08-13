@@ -960,7 +960,7 @@ function sfui_Init() {
     return;
   }
 
-  userScripts.install({'wnd_end_load': sfui.endPoint});
+  userScripts.install({ 'wnd_end_load': sfui.endPoint });
   sfui.plugins.forEach(plugin => { // исполняем модули которые должны быть выполнены при запуске
     try {
       if (plugin.wndCondition === 'OnLoadScript' && plugin.callbackCondition())

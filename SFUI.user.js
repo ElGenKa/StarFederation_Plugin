@@ -37,6 +37,7 @@ async function fDestroy() {
     await sfapi.timeout(200);
   }
 }
+
 // ---------------------------------------
 
 // объявляем все объекты скрипта
@@ -959,7 +960,7 @@ function sfui_Init() {
     return;
   }
 
-  userScripts.install({ 'wnd_end_load': sfui.endPoint });
+  userScripts.install({'wnd_end_load': sfui.endPoint});
   sfui.plugins.forEach(plugin => { // исполняем модули которые должны быть выполнены при запуске
     try {
       if (plugin.wndCondition === 'OnLoadScript' && plugin.callbackCondition())
@@ -1158,6 +1159,7 @@ sfui.pushSettings = (code, value) => {
   }
   return 0;
 }
+
 // sfdata.buildings sfdata.hulls sfdata.questions sfdata.productions
 function sfui_installLanguage(language) {
   for (let languageKey in sfui_language) {
@@ -5176,7 +5178,8 @@ sfui.saveSmartFlyList = async (eventClick, type) => {
   if (newFlyListID) {
     smartFlyListsData[id] = {};
     smartFlyListsData[id].id = newFlyListID;
-    smartFlyListsData[id].hint = $('#smartFlyEdit_hint_' + id).val();;
+    smartFlyListsData[id].hint = $('#smartFlyEdit_hint_' + id).val();
+    ;
     smartFlyListsData[id].icon = document.lastSelectedIcon;
   } else
     smartFlyListsData[id] = undefined;
@@ -9005,8 +9008,7 @@ sfui.battleLog = (resp) => {
     // console.log('---------------------------------------------------------------------e')
     if (getWindow('WndControlBattle').isshow() || $(resp.win).find('#WndBattle_battlecontrol').length > 0)
       sfui.battleLogAllowSelectFleet = true;
-  }
-  else tableData = $("#WndBattleLogs_cicle_log_content");
+  } else tableData = $("#WndBattleLogs_cicle_log_content");
 
   tableData.find('.textbox.label.center.controls.w100p').css('display', 'block').removeClass('h22').removeClass('textbox');
   let elementParent = tableData.find('.battlelog');
@@ -9823,6 +9825,7 @@ sfdata.ud = [{
 const getUdNameByID = (id) => sfdata.ud.filter(e => e.id === id.toString())[0].name.toLowerCase();
 
 sfdata.udSets = [];
+
 //Это нужно выполнить после применения языкового пакета
 function pushUDSets() {
   sfdata.udSets.push({

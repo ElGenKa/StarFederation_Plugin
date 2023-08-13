@@ -13,7 +13,8 @@
 
 // Иконки для смарт кнопок и полетных листов
 let sficons = [];
-
+// Синоним функции
+let log = console.log;
 // !DON'T USE THAT! ---------------------
 // Если открыть ангар планеты и выполнить данный скрипт
 // Все корабли, находящиеся в ангаре добавятся в очередь разборки
@@ -856,7 +857,7 @@ sfapi.tls = (object) => {
   if (sfui_playerInfo.language === 'en')
     return sfapi.tlsEn(object);
 
-  return sfapi.tlsRn(object);
+  return sfapi.tlsRu2(object);
 }
 // Использует неразрывной пробел между разрядами
 sfapi.tlsRu = (object) => {
@@ -10019,4 +10020,37 @@ function pushUDSets() {
     inPlanet: true,
     inFleet: true
   })
+}
+
+sfapi.planet = {
+  getName: () => {
+    return $("#WndPlanet_pp_name").text();
+  },
+  getStarName: () => {
+    return $("#WndPlanet_pp_star").text();
+  },
+  getPos: () => {
+    return $("#WndPlanet_pp_coord").text();
+  },
+  getOrbita: () => {
+    return $("#WndPlanet_pp_coord").text().split(":")[1];
+  },
+  getSize: () => {
+    return sfapi.parseIntExt($("#WndPlanet_pp_size").text());
+  },
+  getFreeSize: () => {
+    return sfapi.parseIntExt($("#WndPlanet_pp_fsize").text());
+  },
+  getUsedSize: () => {
+    return sfapi.parseIntExt($("#WndPlanet_pp_bsize").text());
+  },
+  getOrbitalSize: () => {
+    return sfapi.parseIntExt($("#WndPlanet_pp_osize").text());
+  },
+  getFreeOrbitalSize: () => {
+    return sfapi.parseIntExt($("#WndPlanet_pp_ofsize").text());
+  },
+  getUsedOrbitalSize: () => {
+    return sfapi.parseIntExt($("#WndPlanet_pp_obsize").text());
+  }
 }

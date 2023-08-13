@@ -894,9 +894,9 @@ sfapi.rgb2hex = (rgb) => {
   let red = (parseInt(rgb[1], 10).toString(16));
   let green = (parseInt(rgb[2], 10).toString(16));
   let blue = (parseInt(rgb[3], 10).toString(16));
-  if (red.length == 1) red = "0" + red;
-  if (green.length == 1) green = "0" + green;
-  if (blue.length == 1) blue = "0" + blue;
+  if (red.length === 1) red = "0" + red;
+  if (green.length === 1) green = "0" + green;
+  if (blue.length === 1) blue = "0" + blue;
   return "#" + red + g + b;
 };
 
@@ -929,13 +929,13 @@ function sfui_loadSettings() {
 // выводим настройки в окно (ставим чекбоксы, заполняем поля)
 function sfui_printSettings() {
   for (const setting in sfui.settings) {
-    if (typeof sfui.settings[setting] == 'boolean') {
+    if (typeof sfui.settings[setting] === 'boolean') {
       if (sfui.settings[setting]) {
         let select = $(`span[data-settingscode="${setting}"]`)
         select.addClass('inputCheckBoxChecked');
         select.children('input').prop('checked', true);
       }
-    } else if (typeof sfui.settings[setting] == 'string') {
+    } else if (typeof sfui.settings[setting] === 'string') {
       $(`input[data-settingscode="${setting}"]`).val(sfui.settings[setting]);
     }
   }
@@ -1094,14 +1094,14 @@ function sfui_openPreWindow() {
           <span style='margin-top: 3px; margin-bottom: 3px;' data-settingscode='${(isDraw) ? scriptPlugin.code : ''}' class="inputCheckBox ${(isDraw) ? 'sfui_checkbox_settings' : ''}" onmousedown=" ${(!isDraw) ? '' : 'sfui.checkboxCustomAction(this)'}">
             <input name="" type="checkbox">
           </span>
-        <span style="padding-top: 3; padding-left: 7; ${colorRow}" class="">${sfui_getTitlePlugin(scriptPlugin)}</span></div>
+        <span style="padding-top: 3px; padding-left: 7px; ${colorRow}" class="">${sfui_getTitlePlugin(scriptPlugin)}</span></div>
         `;
         } else if (scriptPlugin.type.toLowerCase() === 'string') {
           html += `
         <div class='controlbox-d' style='padding: 3px;'>
         ${htmlHelp}
           <span style='${colorRow}' class="">${sfui_getTitlePlugin(scriptPlugin)}: </span>
-          <input type='text' data-settingscode='${scriptPlugin.code}' oninput='sfui.updateSettingString(this)' id='${scriptPlugin.code}' class='inputText' style='margin-top: 3px;padding: 3;width: 440px;margin-bottom: 3px;'>
+          <input type='text' data-settingscode='${scriptPlugin.code}' oninput='sfui.updateSettingString(this)' id='${scriptPlugin.code}' class='inputText' style='margin-top: 3px;padding: 3px;width: 440px;margin-bottom: 3px;'>
         </div>`;
         }
       }
@@ -1123,7 +1123,7 @@ sfui.checkboxCustomAction = function (owner) {
   owner = $(owner);
   let childrenInput = $(owner).children('input');
   let setting = owner.data('settingscode');
-  if (childrenInput.prop('checked') == true) {
+  if (childrenInput.prop('checked') === true) {
     childrenInput.prop('checked', false);
     owner.removeClass('inputCheckBoxChecked');
     sfui.settings[setting] = false;
@@ -1313,7 +1313,7 @@ function sfui_initWindowScript() {
 }
 
 function sfui_checkMainLoginAndDivMenu() {
-  return $("#main-login").length == 0 && $("#divMenu").length > 0;
+  return $("#main-login").length === 0 && $("#divMenu").length > 0;
 }
 
 // Инициализируем
@@ -1455,7 +1455,7 @@ sfui.createNewCalcWin = () => {
     wnd.calc.updateCurrentValue();
   }
   wnd.calc.calculate = () => {
-    if (wnd.calc.currentOperation == null)
+    if (wnd.calc.currentOperation === null)
       return 0;
 
     let y = sfapi.parseFloatExt(wnd.calc.currentValue);
@@ -1585,7 +1585,7 @@ sfui.createNewCalcWin = () => {
       case 'addNumber':
         wnd.calc._jumpProcess();
 
-        if (wnd.calc.currentValue.toString() == '0') {
+        if (wnd.calc.currentValue.toString() === '0') {
           wnd.calc.currentValue = title;
         } else {
           wnd.calc.currentValue += title;
@@ -1727,7 +1727,7 @@ sfui.createNewCalcWin = () => {
   let calcBTNSHtml = '';
   calcBTNS.forEach(buttonObject => {
     calcBTNSHtml += `
-    <div class="buttoncontainer-1" style="display: flex;width: 50px;height: 32;margin: 3px;">
+    <div class="buttoncontainer-1" style="display: flex;width: 50px;height: 32px;margin: 3px;">
         <button class="image_btn" data-hint='${buttonObject.hint}' type="button" style="color: white;width:50px;height:32px;" onclick="dhxWins.window('${calcID}').calc.func_btn('${buttonObject.func}', '${buttonObject.title}')">${buttonObject.title}</button>
     </div>
     `
@@ -1784,7 +1784,7 @@ function sfui_drawFleetIDInWindow(wnd) {
       if (sfui.settings.WndFleetSmartFleets)
         $(wnd.win).find('.dhtmlx_wins_title .controlbox')[0].innerHTML += `<span class='fleetTitle' style='color:#73c95f; margin-left: 7px; margin-top: 2px;' oncontextmenu="return copyToClipboardEvent(event,this);">${wnd.fleetid}</span>`
       else
-        $(wnd.win).find('.dhtmlx_wins_title')[0].innerHTML += `<span class='fleetTitle' style='color:#73c95f; position: absolute; left: 140; top: 1px;' oncontextmenu="return copyToClipboardEvent(event,this);">${wnd.fleetid}</span>`
+        $(wnd.win).find('.dhtmlx_wins_title')[0].innerHTML += `<span class='fleetTitle' style='color:#73c95f; position: absolute; left: 140px; top: 1px;' oncontextmenu="return copyToClipboardEvent(event,this);">${wnd.fleetid}</span>`
     }
   }
 }
@@ -1951,7 +1951,7 @@ sfui.resizeStarRows = function () {
             } else {
               prepareDataError = true;
             }
-          } else if (orbitalNumber == 0) { //controls-left-row
+          } else if (orbitalNumber === 0) { //controls-left-row
             newRowHTML += `<tr style='height:24px' class='text11'>`;
             newRowHTML += `<td class='value_bg frame' style='color: white' data-hint=''>0</td>`;
             newRowHTML += `</tr>`;
@@ -1971,7 +1971,7 @@ sfui.resizeStarRows = function () {
 //Ужим строк тц
 sfui.updateTradeRow = function () {
   try {
-    $('tr[id^="WndTrade_rates_row_"')
+    $('tr[id^="WndTrade_rates_row_"]')
       .css('height', '14px')
       .find('td.padding0')
       .css('height', '14px')
@@ -2014,7 +2014,7 @@ sfui.WndScienceSetMaxTech = function () {
 //Открытие окна просмотра планет, добавляем команды для флотов
 sfui.WndSelectPlanet = function () {
   let title = $(getWindow('WndSelect').win).find(".dhtmlx_wins_title")[0].innerText;
-  if (title == sfui_language.SELECT_COLONY) {
+  if (title === sfui_language.SELECT_COLONY) {
     let rows = $("[id^='WndSelect_playerplanets_row']");
     for (let i = 0; i < rows.length; i++) {
       let row = rows[i];
@@ -2097,7 +2097,7 @@ sfui.addMaxShipsCount = function () {
     let elementForMaxShips = null;
 
     Array.from($($(element.nextElementSibling).find('tr'))).forEach((e, i) => {
-      if (i == 0) {
+      if (i === 0) {
         elementForMaxShips = $(e);
         return;
       }
@@ -2107,7 +2107,7 @@ sfui.addMaxShipsCount = function () {
       let need = tdr[2];
       let amount = tdr[3];
       let minTdr = Math.floor(sfapi.parseIntExt(amount.innerText) / sfapi.parseIntExt(need.innerText));
-      if (name != sfui_language.POPULATION) {
+      if (name !== sfui_language.POPULATION) {
         if (minTdr < minShips)
           minShips = minTdr;
       } else if (minTdr < minShipsForNas)
@@ -2122,7 +2122,7 @@ sfui.addMaxShipsCount = function () {
 
 //Добавляем кнопочки в окно просмотра империи
 sfui.externalCommandsInEmpire = function () {
-  if (getWindow("WndPlanets").activetab == 'main-colonies') {
+  if (getWindow("WndPlanets").activetab === 'main-colonies') {
     let rows = $("[id^='WndPlanets_colonies_row_']");
     for (let i = 0; i < rows.length; i++) {
       let row = rows[i];
@@ -2237,7 +2237,7 @@ sfui.calcUsedStorageInFleet = function () {
       if (prodCombo._self._selOption) {
         let idProd = prodCombo._self._selOption.value;
         let weight = sfdata.productions.find(function (e) {
-          if (e.id == idProd && typeof e.weight != "undefined") return true;
+          if (e.id === idProd && typeof e.weight != "undefined") return true;
         });
         if (weight) {
           weight = weight.weight * resCount;
@@ -2300,7 +2300,7 @@ sfui.udShuffle = (wnd, targetWnd) => {
     if (installsUd.length > 0) {
       sfdata.udSets.forEach((ef, fi) => {
         if (ef.oneInstall && ef.inFleet) {
-          $('#WndFleet_fleet_device_settings_frame').find('table.w335').append(`<tr><td colspan=4><span style='color:f1cb95'>${ef.name}</span></td></tr>`);
+          $('#WndFleet_fleet_device_settings_frame').find('table.w335').append(`<tr><td colspan=4><span style='color:#f1cb95'>${ef.name}</span></td></tr>`);
           ef.htmls.forEach((e) => {
             $('#WndFleet_fleet_device_settings_frame').find('table.w335').append(e);
           });
@@ -2335,7 +2335,7 @@ sfui.udShuffle = (wnd, targetWnd) => {
     if (installsUd.length > 0) {
       sfdata.udSets.forEach((ef, fi) => {
         if (ef.oneInstall && ef.inPlanet) {
-          $('#WndPlanet_fleet_device_settings_frame').find('table.w310').append(`<tr><td colspan=4><span style='color:f1cb95'>${ef.name}</span></td></tr>`);
+          $('#WndPlanet_fleet_device_settings_frame').find('table.w310').append(`<tr><td colspan=4><span style='color:#f1cb95'>${ef.name}</span></td></tr>`);
           ef.htmls.forEach((e) => {
             $('#WndPlanet_fleet_device_settings_frame').find('table.w310').append(e);
           });
@@ -2370,7 +2370,7 @@ sfui.udShuffle = (wnd, targetWnd) => {
     if (installsUd.length > 0) {
       sfdata.udSets.forEach((ef, fi) => {
         //if (ef.oneInstall && ef.inPlanet) {
-        $('#WndTrade_federation-devices_content').find('tbody').append(`<tr><td colspan=7><span style='color:f1cb95'>${ef.name}</span></td></tr>`);
+        $('#WndTrade_federation-devices_content').find('tbody').append(`<tr><td colspan=7><span style='color:#f1cb95'>${ef.name}</span></td></tr>`);
         ef.htmls.forEach((e) => {
           $('#WndTrade_federation-devices_content').find('tbody').append(e);
         });
@@ -2635,16 +2635,16 @@ empireShow.transportAll = function (fromArray = []) {
     <button style='margin-top: 12px; margin-left: 7px;' class="image_btn noselect" type="button" data-hint="${sfui_language.REMOVE_ALL}" style="width:12px;height:12px;" onclick="empireShow.transportUncheckAll()"><img border="0" width='12px' height='12px' src="/images/icons/flat/i-close-red-16.png"></button>
     <button class="image_btn noselect" type="button" data-hint="${sfui_language.SELECT_ALL}" style="width:12px;height:12px;" onclick="empireShow.transportCheckAll()"><img border="0" width='12px' height='12px' src="/images/icons/flat/i-enter-1-16.png"></button>
     </div>
-    <div style='overflow-y: scroll; overflow-x: hidden; padding: 3px; height: 235px; width: 254;'>
+    <div style='overflow-y: scroll; overflow-x: hidden; padding: 3px; height: 235px; width: 254px;'>
     ${planetsHtml}
     </div>
     </div>
     `;
-  html += `<div class='textcontainer-l' style='position: absolute; right: 0px; top: 0px; width: 500; height: 455px; overflow-y: scroll; overflow-x: hidden; padding: 3px;'>`;
+  html += `<div class='textcontainer-l' style='position: absolute; right: 0px; top: 0px; width: 500px; height: 455px; overflow-y: scroll; overflow-x: hidden; padding: 3px;'>`;
   html += `<div class='row w-100 mx-0 mt-0 textcontainer-l'> <div class='col-12 px-0' style=''>`
   html += `
   <div class="row">
-    <div class="col-8" style="padding-right: 0;padding-top: 3;">
+    <div class="col-8" style="padding-right: 0;padding-top: 3px;">
       <label style="">${sfui_language.SHIPING_ALL}</label>
     </div>
     <div class="col-3" style="padding-left: 0;">
@@ -2660,7 +2660,7 @@ empireShow.transportAll = function (fromArray = []) {
     html += `</div>`;
   });
   html += "</div>";
-  html += `<div class='textcontainer-l' style='width: 270; height: 165px; position: absolute; top: 290px; left: 0px;'>`;
+  html += `<div class='textcontainer-l' style='width: 270px; height: 165px; position: absolute; top: 290px; left: 0px;'>`;
   html += `<small>Настройки флота</small><br>`;
   html += `<small style="display: inline-block; width: 40%;">№ флота</small> <input style='width: 55%;' type='Number' class='inputText transferAllResFleet' onchange='empireShow.showSelectFleet()' value='0'><br>`;
   html += `<small style="display: inline-block; width: 40%;">${sfui_language.LOADING_STATION}</small> <input style='width: 55%; margin-bottom: 10px; margin-top: 5px;' class='inputText' id='transportLoadOn'><br>`;
@@ -3150,7 +3150,7 @@ sfui.CreateWindow = function (id, w, h, title, icon, html, resizabel, dragabel) 
   let destoyed = false;
   let usedId = -1;
   for (let i = 0; i < sfui.winsList.length; i++) {
-    if (sfui.winsList[i].id == id) {
+    if (sfui.winsList[i].id === id) {
       if (dhxWins.window(id) == null || typeof dhxWins.window(id) == "undefined") {
         nameExist = true;
         destoyed = true;
@@ -3164,17 +3164,17 @@ sfui.CreateWindow = function (id, w, h, title, icon, html, resizabel, dragabel) 
     }
   }
 
-  if (typeof w == undefined) w = 300;
-  if (typeof h == undefined) h = 200;
-  if (typeof resizabel == undefined) resizabel = false;
-  if (typeof dragabel == undefined) dragabel = false;
-  if (typeof html == "undefined") html = "--html code--";
+  if (typeof w === undefined) w = 300;
+  if (typeof h === undefined) h = 200;
+  if (typeof resizabel === undefined) resizabel = false;
+  if (typeof dragabel === undefined) dragabel = false;
+  if (typeof html === "undefined") html = "--html code--";
 
   dhxWins.createWindow(id, 10, 10, w, h);
   let win = dhxWins.window(id);
   if (!resizabel) win.denyResize();
   if (!dragabel) win.denyMove();
-  win.setText((typeof title == "undefined") ? id : title);
+  win.setText((typeof title === "undefined") ? id : title);
   win.centerOnScreen();
   win.attachHTMLString(html);
   if (typeof icon != "undefined")
@@ -3187,7 +3187,7 @@ sfui.CreateWindow = function (id, w, h, title, icon, html, resizabel, dragabel) 
       isOriginalWindow: false
     }
   };
-  if (usedId == -1)
+  if (usedId === -1)
     sfui.winsList.push(win_tmp);
   else
     sfui.winsList[usedId] = win_tmp;
@@ -3231,7 +3231,7 @@ sfui.plugins.push({
   callback: () => {
     $("#WndPlanetsEnableAll").remove();
     $("#WndPlanetsDisableAll").remove();
-    if ($("#WndPlanets_flt_ssc_prod").children(0)[0].combo._selOption.text == sfui_language.ARCH_CENTER) {
+    if ($("#WndPlanets_flt_ssc_prod").children(0)[0].combo._selOption.text === sfui_language.ARCH_CENTER) {
       $('#WndPlanets_buildings_build_title').append(`<span id='WndPlanetsEnableAll' style='cursor: pointer; color: #00D000;' onclick='empireShow.enableAll()'>вкл.</span><span style='cursor: pointer; color: #FF0000;' id='WndPlanetsDisableAll' onclick='empireShow.disableAll()'>выкл.</span>`)
     } else {
       $("#WndPlanetsEnableAll").remove();
@@ -3284,7 +3284,7 @@ sfui.plugins.push({
   wndCondition: 'WndStar',
   callback: sfui.resizeStarRows,
   callbackCondition: () => {
-    return getWindow("WndStar").activetab == "main-planets";
+    return getWindow("WndStar").activetab === "main-planets";
   },
   help: {
     img: 'https://i.postimg.cc/J0gYg2qP/Screenshot-19.jpg',
@@ -3306,7 +3306,7 @@ sfui.plugins.push({
         let countPerCycle = sfapi.parseIntExt(colTime[0]);
 
         //  Если производство не запущено или остался 1 цикл, подсказка не требуется
-        if (colTime.length <= 1 || totalCount == countPerCycle)
+        if (colTime.length <= 1 || totalCount === countPerCycle)
           return;
 
         let secondsPerCycle = sfapi.parseIntExt(colTime[1]);
@@ -3368,7 +3368,7 @@ sfui.plugins.push({
   wndCondition: 'WndFleets',
   callback: () => {
     const wnd = getWindow("WndFleets");
-    if (wnd.activetab == "main-myfleets") {
+    if (wnd.activetab === "main-myfleets") {
       $(".battle-rate-info").remove();
       wnd.fleets.forEach(function (fleetID) {
         let battleRait = $($(`tr[rowid='${fleetID}']`).children()[7]).find(`td:contains("${sfui_language.TEXT_BR}")`)[0].nextElementSibling.innerText;
@@ -3510,7 +3510,7 @@ sfui.plugins.push({
   callback: async () => {
     const wnd = getWindow("WndFleets");
     $(".dropAllNoFuelExtInFleet").remove();
-    if (wnd.activetab == "main-myfleets") {
+    if (wnd.activetab === "main-myfleets") {
       wnd.fleets.forEach(function (fleetID) {
         let btnAppend = Array.from($($(`tr[rowid='${fleetID}']`).find('td')[5]).find('span[onclick^="fleet_external_comand"]')).at(-1);
         if (!btnAppend)
@@ -3610,11 +3610,11 @@ sfui.plugins.push({
     let container = $('#WndFleet_container div.controls-left-row.controlbox');
     container.append(`<div class="vsep m2 h100p WndFleetSeparatorToSmartFlyList"></div>`);
     for (let i = 0; i < 6; i++) {
-      container.append(`<button oncontextmenu="sfui.showSmartFlyListEdit('${i}', 2); return false;" id='SmartFlyList_${i}u' data-hint='Загрузить командный лист (уникальный для флота). ПКМ что бы изменить. Лист будет добавлен.' type='button' class='image_btn noselect smartFlyBtn' style='width:20px;height:20px;'><img oncontextmenu="return false;" width=16 height=16 class="noselect" border="0" src="/images/icons/arrrow_dn_16.png"></button>`);
+      container.append(`<button oncontextmenu="sfui.showSmartFlyListEdit('${i}', 2); return false;" id='SmartFlyList_${i}u' data-hint='Загрузить командный лист (уникальный для флота). ПКМ что бы изменить. Лист будет добавлен.' type='button' class='image_btn noselect smartFlyBtn' style='width:20px;height:20px;'><img alt="" oncontextmenu="return false;" width=16 height=16 class="noselect" border="0" src="/images/icons/arrrow_dn_16.png"></button>`);
     }
     container.append(`<div class="vsep m2 h100p WndFleetSeparatorToSmartFlyList"></div>`);
     for (let i = 0; i < 3; i++) {
-      container.append(`<button oncontextmenu="sfui.showSmartFlyListEdit('${i}', 1); return false;" id='SmartFlyList_${i}' data-hint='Загрузить командный лист (общие листы для всех флотов). ПКМ что бы изменить. Лист будет добавлен.' type='button' class='image_btn noselect smartFlyBtn' style='width:20px;height:20px;'><img oncontextmenu="return false;" width=16 height=16 class="noselect" border="0" src="/images/icons/arrrow_dn_16.png"></button>`);
+      container.append(`<button oncontextmenu="sfui.showSmartFlyListEdit('${i}', 1); return false;" id='SmartFlyList_${i}' data-hint='Загрузить командный лист (общие листы для всех флотов). ПКМ что бы изменить. Лист будет добавлен.' type='button' class='image_btn noselect smartFlyBtn' style='width:20px;height:20px;'><img alt="" oncontextmenu="return false;" width=16 height=16 class="noselect" border="0" src="/images/icons/arrrow_dn_16.png"></button>`);
     }
 
     let fleetID = getWindow('WndFleet').fleetid;
@@ -3714,7 +3714,7 @@ sfui.plugins.push({
     //WndFleet.lastSelectID = parseInt($($("#WndFleetInfo_container tr")[1])[0].firstChild.innerText);
     let intBR;
     let elemBR = $($(`#WndFleetInfo_container img[data-hint^='${sfui_language.TEXT_BR_EX}']`)[0].parentElement.nextElementSibling);
-    if (typeof elemBR.find("span[class='v-norm-dec']").data("hint") == "number")
+    if (typeof elemBR.find("span[class='v-norm-dec']").data("hint") === "number")
       intBR = elemBR.find("span[class='v-norm-dec']").data("hint") * 2;
 
     if (!intBR) {
@@ -4164,7 +4164,7 @@ sfui.plugins.push({
   wndCondition: 'WndTrade',
   callback: sfui.updateSellCredits,
   callbackCondition: () => {
-    return getWindow('WndTrade').activetab == "federation-sellresourses";
+    return getWindow('WndTrade').activetab === "federation-sellresourses";
   },
   help: {
     img: 'https://i.postimg.cc/mZdvCdQc/Screenshot-10.jpg',
@@ -4178,7 +4178,7 @@ sfui.plugins.push({
   wndCondition: 'WndTrade',
   callback: sfui.updateTradeRow,
   callbackCondition: () => {
-    return getWindow('WndTrade').activetab == "main-rates";
+    return getWindow('WndTrade').activetab === "main-rates";
   },
   help: {
     img: 'https://i.postimg.cc/mrNqDVLg/Screenshot-11.jpg',
@@ -4192,7 +4192,7 @@ sfui.plugins.push({
   wndCondition: 'WndTrade',
   callback: sfui.calcTradeCount,
   callbackCondition: () => {
-    return getWindow('WndTrade').activetab == "main-rates";
+    return getWindow('WndTrade').activetab === "main-rates";
   },
   help: {
     img: 'https://i.postimg.cc/gkQ1Bntm/Screenshot-13.jpg',
@@ -4206,8 +4206,9 @@ sfui.plugins.push({
   wndCondition: 'WndAdversting',
   callback: () => {
     setTimeout(() => {
-      let htmlCode = $('#WndAdversting_note').html().replace(/(http[s]?:\/\/[^ <]+?)([.,]*?[ <])/g, "<a href='$1' target='_blank' style='color:#eee;'>$1</a>$2");
-      $('#WndAdversting_note').html(htmlCode);
+      let note = $('#WndAdversting_note');
+      let htmlCode = note.html().replace(/(http[s]?:\/\/[^ <]+?)([.,]*?[ <])/g, "<a href='$1' target='_blank' style='color:#eee;'>$1</a>$2");
+      note.html(htmlCode);
     }, 100);
   },
   callbackCondition: () => {
@@ -4221,12 +4222,13 @@ sfui.plugins.push({
   wndCondition: 'WndTrade',
   callback: () => {
     setTimeout(() => {
-      let htmlCode = $('#WndTrade_adversting_content').html().replace(/(http[s]?:\/\/[^ <]+?)([.,]*?[ <])/g, "<a href='$1' target='_blank' style='color:#eee;'>$1</a>$2");
-      $('#WndTrade_adversting_content').html(htmlCode);
+      let ad = $('#WndTrade_adversting_content');
+      let htmlCode = ad.html().replace(/(http[s]?:\/\/[^ <]+?)([.,]*?[ <])/g, "<a href='$1' target='_blank' style='color:#eee;'>$1</a>$2");
+      ad.html(htmlCode);
     }, 100);
   },
   callbackCondition: () => {
-    return getWindow('WndTrade').activetab == "main-adversting";
+    return getWindow('WndTrade').activetab === "main-adversting";
   },
   help: {
     img: 'https://i.postimg.cc/6pZFstFR/Screenshot-14.jpg',
@@ -4307,7 +4309,7 @@ sfui.plugins.push({
   callback: () => {
     $('#WndStarMapB_map').mousedown(function (e) {
       setTimeout(() => {
-        if (e.button == 2) {
+        if (e.button === 2) {
           let minDistance = 999999;
           let minName = 'Undefined!'
           let posClick = $('#WndStarMapB_rm_menu_coord').text();
@@ -4569,7 +4571,7 @@ class TempDiv {
     let tmpContainer = document.createElement('div');
     tmpContainer.id = id;
     tmpContainer.linkToObject = this;
-    if (inTable == true)
+    if (inTable === true)
       tmpContainer.innerHTML = "<table>" + res.html + "</table>";
     else
       tmpContainer.innerHTML = res.html;
@@ -4656,7 +4658,7 @@ sfui.calculateRockets = function () {
 };
 
 sfui.switchModules = function (elm) {
-  if (elm.nextElementSibling.style.display == "none") {
+  if (elm.nextElementSibling.style.display === "none") {
     elm.nextElementSibling.style.display = "table-row";
   } else {
     elm.nextElementSibling.style.display = "none";
@@ -4828,7 +4830,7 @@ sfui.calculateFleetInfo = function () {
             if (hint.indexOf(getProdById(195).name) + 1) armor.nshield = true;
             let oncli = trModules[iModule].onclick.toString().replace("function onclick(event) {", '').replace("}", "");
             buildHtml_t += `<img src='${srcM}' data-hint='${hint}' onclick='${oncli}' width='16px' height='16px' class='noselect'>`;
-            if (iModule % 50 == 0 && iModule > 0) buildHtml_t += "<br>";
+            if (iModule % 50 === 0 && iModule > 0) buildHtml_t += "<br>";
           }
         }
         buildHtml_t += "</td></tr>";
@@ -4863,7 +4865,7 @@ sfui.calculateFleetInfo = function () {
 
         buildHtml += "<td class='showWeaponsVul'>";
         let isSign = signature;
-        if (signature == 'Неизвестно') isSign = 999999;
+        if (signature === 'Неизвестно') isSign = 999999;
         else isSign = sfapi.parseIntExt(isSign);
 
         if (armor.sp && isSign >= 5000) {
@@ -4913,7 +4915,7 @@ sfui.calculateFleetInfo = function () {
           }
           weaponData.each((i, j) => {
             let cells = j.cells;
-            if (typeof weapons[cells[3].innerText] == "undefined") {
+            if (typeof weapons[cells[3].innerText] === "undefined") {
               weapons[cells[3].innerText] = {
                 distance: cells[0].innerText,
                 damage: parseInt(cells[3].innerText.replaceAll(" ", "").split(".")[0]),
@@ -4926,24 +4928,24 @@ sfui.calculateFleetInfo = function () {
             }
           });
           for (let weaponIndex in weapons) {
-            if (weapons[weaponIndex].signature == 0 && weapons[weaponIndex].weaponRange == 1) weapons[weaponIndex].weaponType = "il";
+            if (weapons[weaponIndex].signature === 0 && weapons[weaponIndex].weaponRange === 1) weapons[weaponIndex].weaponType = "il";
             else {
-              if (weapons[weaponIndex].weaponRange == 2) weapons[weaponIndex].weaponType = "ll";
-              if (weapons[weaponIndex].weaponRange == 3) weapons[weaponIndex].weaponType = "tl";
-              if (weapons[weaponIndex].weaponRange == 4) weapons[weaponIndex].weaponType = "po";
-              if (weapons[weaponIndex].weaponRange == 5) weapons[weaponIndex].weaponType = "ko";
-              if (weapons[weaponIndex].weaponRange == 6 && weapons[weaponIndex].distance == "7") weapons[weaponIndex].weaponType = "io";
-              if (weapons[weaponIndex].weaponRange == 6 && weapons[weaponIndex].distance == "14") weapons[weaponIndex].weaponType = "rpu1";
-              if (weapons[weaponIndex].weaponRange == 8 && weapons[weaponIndex].signature > 0) weapons[weaponIndex].weaponType = "rpu2";
-              if (weapons[weaponIndex].weaponRange == 10) weapons[weaponIndex].weaponType = "rpu3";
-              if (weapons[weaponIndex].weaponRange == 5 && weapons[weaponIndex].signature > 250000) weapons[weaponIndex].weaponType = "ta";
-              if (weapons[weaponIndex].weaponRange == 8 && weapons[weaponIndex].signature == 0) weapons[weaponIndex].weaponType = "pr";
+              if (weapons[weaponIndex].weaponRange === 2) weapons[weaponIndex].weaponType = "ll";
+              if (weapons[weaponIndex].weaponRange === 3) weapons[weaponIndex].weaponType = "tl";
+              if (weapons[weaponIndex].weaponRange === 4) weapons[weaponIndex].weaponType = "po";
+              if (weapons[weaponIndex].weaponRange === 5) weapons[weaponIndex].weaponType = "ko";
+              if (weapons[weaponIndex].weaponRange === 6 && weapons[weaponIndex].distance === "7") weapons[weaponIndex].weaponType = "io";
+              if (weapons[weaponIndex].weaponRange === 6 && weapons[weaponIndex].distance === "14") weapons[weaponIndex].weaponType = "rpu1";
+              if (weapons[weaponIndex].weaponRange === 8 && weapons[weaponIndex].signature > 0) weapons[weaponIndex].weaponType = "rpu2";
+              if (weapons[weaponIndex].weaponRange === 10) weapons[weaponIndex].weaponType = "rpu3";
+              if (weapons[weaponIndex].weaponRange === 5 && weapons[weaponIndex].signature > 250000) weapons[weaponIndex].weaponType = "ta";
+              if (weapons[weaponIndex].weaponRange === 8 && weapons[weaponIndex].signature === 0) weapons[weaponIndex].weaponType = "pr";
             }
 
           }
           for (let wt in weaponTypes) {
             for (let wt_d in weapons) {
-              if (wt == weapons[wt_d].weaponType) weaponTypes[wt] += weapons[wt_d].damage;
+              if (wt === weapons[wt_d].weaponType) weaponTypes[wt] += weapons[wt_d].damage;
             }
           }
 
@@ -4956,20 +4958,20 @@ sfui.calculateFleetInfo = function () {
           let rString = "";
           let oString = "";
           for (let wt in weaponTypes) {
-            if (wt == "il" && weaponTypes[wt] > 0) ilString += `${weaponTypes[wt]}<br>`;
-            if (wt == "ll" && weaponTypes[wt] > 0) llString += `${weaponTypes[wt]}<br>`;
-            if (wt == "tl" && weaponTypes[wt] > 0) tlString += `${weaponTypes[wt]}<br>`;
+            if (wt === "il" && weaponTypes[wt] > 0) ilString += `${weaponTypes[wt]}<br>`;
+            if (wt === "ll" && weaponTypes[wt] > 0) llString += `${weaponTypes[wt]}<br>`;
+            if (wt === "tl" && weaponTypes[wt] > 0) tlString += `${weaponTypes[wt]}<br>`;
 
-            if (wt == "po" && weaponTypes[wt] > 0) or1String += `${weaponTypes[wt]}<br>`;
-            if (wt == "ko" && weaponTypes[wt] > 0) or2String += `${weaponTypes[wt]}<br>`;
-            if (wt == "io" && weaponTypes[wt] > 0) or3String += `${weaponTypes[wt]}<br>`;
+            if (wt === "po" && weaponTypes[wt] > 0) or1String += `${weaponTypes[wt]}<br>`;
+            if (wt === "ko" && weaponTypes[wt] > 0) or2String += `${weaponTypes[wt]}<br>`;
+            if (wt === "io" && weaponTypes[wt] > 0) or3String += `${weaponTypes[wt]}<br>`;
 
-            if (wt == "rpu1" && weaponTypes[wt] > 0) rString += `РПУ-Х1: ${weaponTypes[wt]}<br>`;
-            if (wt == "rpu2" && weaponTypes[wt] > 0) rString += `РПУ-Х2: ${weaponTypes[wt]}<br>`;
-            if (wt == "rpu3" && weaponTypes[wt] > 0) rString += `РПУ-Х3: ${weaponTypes[wt]}<br>`;
+            if (wt === "rpu1" && weaponTypes[wt] > 0) rString += `РПУ-Х1: ${weaponTypes[wt]}<br>`;
+            if (wt === "rpu2" && weaponTypes[wt] > 0) rString += `РПУ-Х2: ${weaponTypes[wt]}<br>`;
+            if (wt === "rpu3" && weaponTypes[wt] > 0) rString += `РПУ-Х3: ${weaponTypes[wt]}<br>`;
 
-            if (wt == "ta" && weaponTypes[wt] > 0) oString += `Торпеды: ${weaponTypes[wt]}<br>`;
-            if (wt == "pr" && weaponTypes[wt] > 0) oString += `Руха: ${weaponTypes[wt]}<br>`;
+            if (wt === "ta" && weaponTypes[wt] > 0) oString += `Торпеды: ${weaponTypes[wt]}<br>`;
+            if (wt === "pr" && weaponTypes[wt] > 0) oString += `Руха: ${weaponTypes[wt]}<br>`;
           }
 
           buildHtml += `
@@ -5009,7 +5011,7 @@ sfui.showSmartFleetEdit = (id) => {
   let savedSmartFleetId = '';
   let savedSmartFleetHint = '';
   let savedSmartFleetIcon = '';
-  if (id != -1) {
+  if (id !== -1) {
     let smartFleetsData = localStorage.getItem('sf_smartFleets');
     if (smartFleetsData) {
       let smartFleets = JSON.parse(smartFleetsData);
@@ -5105,9 +5107,9 @@ sfui.showSmartFlyListEdit = (id, type) => {
   let savedSmartFlyListId = '';
   let savedSmartFlyListHint = '';
   let savedSmartFlyListIcon = '';
-  if (id != -1) {
+  if (id !== -1) {
     let fleetID = getWindow('WndFleet').fleetid;
-    let storageStr = `sf_smartFlyList${type == 1 ? '' : '_' + fleetID}`;
+    let storageStr = `sf_smartFlyList${type === 1 ? '' : '_' + fleetID}`;
     let SmartFlyListsData = localStorage.getItem(storageStr);
     if (SmartFlyListsData) {
       let SmartFlyLists = JSON.parse(SmartFlyListsData);
@@ -5381,9 +5383,9 @@ sfui.convertDOMElemToCanvas = async (elem) => {
     backgroundColor: '#0E1819',
     ignoreElements: function (element) {
       if (element.contains(elem) || elem.contains(element) ||
-        elem === element || element.nodeName == 'HEAD' ||
-        element.nodeName == 'STYLE' || element.nodeName == 'META' ||
-        element.nodeName == 'LINK')
+        elem === element || element.nodeName === 'HEAD' ||
+        element.nodeName === 'STYLE' || element.nodeName === 'META' ||
+        element.nodeName === 'LINK')
         return false;
       else
         return true;
@@ -8999,7 +9001,7 @@ sfui.battleLog = (resp) => {
   sfui.battleLogAllowSelectFleet = false;
 
   let tableData;
-  if (resp.win.idd == "WndBattle") {
+  if (resp.win.idd === "WndBattle") {
     tableData = $("#WndBattle_cicle_log_content");
     // console.log('---------------------------------------------------------------------s')
     // console.log(resp.win);
@@ -9022,7 +9024,7 @@ sfui.battleLog = (resp) => {
 
   for (let iCol = 0; iCol <= 30; iCol++) {
     let gridColor = 'normalPos';
-    if (iCol == 0)
+    if (iCol === 0)
       gridColor = 'attackerExit';
     else if (iCol === 30)
       gridColor = 'defenderExit';
@@ -9066,7 +9068,7 @@ sfui.battleLog = (resp) => {
       fullHp: fullHp,
       minHp: minHp,
       pos1: pos1,
-      pos2: posStrs.length == 3 ? parseFloat(posStrs[2]) : pos1
+      pos2: posStrs.length === 3 ? parseFloat(posStrs[2]) : pos1
     };
   };
   const getFleetData_From_NameSpan = (fleet_NameSpan) => {
@@ -9219,17 +9221,17 @@ sfui.battleLog = (resp) => {
   }
 
   atkFleetsAfter.forEach((fleetAfter) => {
-    const fleetBefore = atkFleetsBefore.find(fleetBefore => fleetBefore.number == fleetAfter.number);
+    const fleetBefore = atkFleetsBefore.find(fleetBefore => fleetBefore.number === fleetAfter.number);
     fleetAfter.ships.forEach((shipAfter) => {
-      shipBefore = fleetBefore.ships.find(shipBefore => shipBefore.name == shipAfter.name);
+      shipBefore = fleetBefore.ships.find(shipBefore => shipBefore.name === shipAfter.name);
       shipAfter.pos1 = shipBefore.pos1;
       addShipToGrid(shipAfter, 'attack');
     });
   });
   defFleetsAfter.forEach((fleetAfter) => {
-    const fleetBefore = defFleetsBefore.find(fleetBefore => fleetBefore.number == fleetAfter.number);
+    const fleetBefore = defFleetsBefore.find(fleetBefore => fleetBefore.number === fleetAfter.number);
     fleetAfter.ships.forEach((shipAfter) => {
-      shipBefore = fleetBefore.ships.find(shipBefore => shipBefore.name == shipAfter.name);
+      shipBefore = fleetBefore.ships.find(shipBefore => shipBefore.name === shipAfter.name);
       shipAfter.pos1 = shipBefore.pos1;
       addShipToGrid(shipAfter, 'deffend');
     });
@@ -9301,7 +9303,7 @@ sfui.battleLogSelectEnemy = (event) => {
   let menuArray = [];
   dataSelect.forEach(e => {
     let filter = menuArray.filter(em => em.id === (e.wpName + e.attakName));
-    if (filter.length == 0) {
+    if (filter.length === 0) {
       menuArray.push({
         fullData: e,
         id: e.wpName + e.attakName,

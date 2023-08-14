@@ -797,6 +797,8 @@ sfapi.fetch = (url, options = {}) => {
 const TRLN = 1_000_000_000_000;
 
 sfapi.parseIntExt = (valueStr) => {
+  if (typeof valueStr === 'number')
+    return valueStr;
   if (typeof valueStr !== 'string')
     throw 'sfapi.parseIntExt: invalid argument type';
 
@@ -810,6 +812,8 @@ sfapi.parseIntExt = (valueStr) => {
   return parseInt(value);
 }
 sfapi.parseFloatExt = (valueStr) => {
+  if (typeof valueStr === 'number')
+    return valueStr;
   if (typeof valueStr !== 'string')
     throw 'sfapi.parseFloatExt: invalid argument type';
 
@@ -2166,12 +2170,15 @@ sfui.resRemainTime = function () {
     const amount = sfapi.parseIntExt(dataRows[i].innerText);
     const timeRemain = -(amount / demand);
     const hintStr = `${sfui_language.RES_TIME_REMAIN} ${sfui_formatTimeFromHours(timeRemain)}`;
-    dataRows[i].setAttribute('data-hint', hintStr);
-    dataRows[i].childNodes[0].style.pointerEvents = 'none';
-    dataRows[i + 1].setAttribute('data-hint', hintStr);
-    dataRows[i + 1].childNodes[0].style.pointerEvents = 'none';
-    dataRows[i + 2].setAttribute('data-hint', hintStr);
-    dataRows[i + 2].childNodes[0].style.pointerEvents = 'none';
+    const cell_Amount_jq = dataRows.eq(i);
+    const cell_Mass_jq = dataRows.eq(i + 1);
+    const cell_Demand_jq = dataRows.eq(i + 2);
+    cell_Amount_jq.attr('data-hint', hintStr);
+    cell_Amount_jq.children('span').first().css('pointerEvents', 'none');
+    cell_Mass_jq.attr('data-hint', hintStr);
+    cell_Mass_jq.children('span').first().css('pointerEvents', 'none');
+    cell_Demand_jq.attr('data-hint', hintStr);
+    cell_Demand_jq.children('span').first().css('pointerEvents', 'none');
   }
 }
 //Добавляем хинт на время до исчерпания ресурса
@@ -2191,38 +2198,32 @@ sfui.resAnimateChange = (wnd) => {
     let massData = '';
     let expenseData = '';
 
-    if ($(targetValues[5]).find('span.v-norm').data('hint'))
-      expenseData = $(targetValues[5]).find('span.v-norm').data('hint');
-    else
-      expenseData = targetValues[5].innerText;
+    const span_Demand_jq = targetValues.eq(5).find('span.v-norm');
+    expenseData = span_Demand_jq.data('hint') ?? targetValues[5].innerText;
 
     const expenseVal = sfapi.parseFloatExt(expenseData) / 3600;
     if (!expenseVal)
       return;
 
-    if ($(targetValues[3]).find('span.v-norm').data('hint'))
-      if ($(targetValues[3]).find('span.v-norm')[0].dataset.hint)
-        amountData = $(targetValues[3]).find('span.v-norm')[0].dataset.hint;
-      else
-        amountData = $(targetValues[3]).find('span.v-norm')[1].dataset.hint;
+    const span_Amount_jq = targetValues.eq(3).find('span.v-norm');
+    if (span_Amount_jq.data('hint'))
+      amountData = span_Amount_jq[0].dataset.hint ?? span_Amount_jq[1].dataset.hint
     else
       amountData = targetValues[3].innerText;
 
-    if ($(targetValues[4]).find('span.v-norm').data('hint'))
-      if ($(targetValues[4]).find('span.v-norm')[0].dataset.hint)
-        massData = $(targetValues[4]).find('span.v-norm')[0].dataset.hint;
-      else
-        massData = $(targetValues[4]).find('span.v-norm')[1].dataset.hint;
+    const span_Mass_jq = targetValues.eq(4).find('span.v-norm');
+    if (span_Mass_jq.data('hint'))
+      massData = span_Mass_jq[0].dataset.hint ?? span_Mass_jq[1].dataset.hint;
     else
       massData = targetValues[4].innerText;
 
     const newAmountVal = Math.round(sfapi.parseFloatExt(amountData) + expenseVal);
     const massRate = Math.round(sfapi.parseFloatExt(massData) / sfapi.parseFloatExt(amountData));
-    targetValues[3].childNodes[0].innerHTML = sfapi.wrapToGameValue(newAmountVal);
-    targetValues[3].childNodes[0].style.pointerEvents = 'none';
-    targetValues[4].childNodes[0].innerHTML = sfapi.wrapToGameValue(massRate * newAmountVal);
-    targetValues[4].childNodes[0].style.pointerEvents = 'none';
-    targetValues[5].childNodes[0].style.pointerEvents = 'none';
+    span_Amount_jq.html(sfapi.wrapToGameValue(newAmountVal));
+    span_Amount_jq.css('pointerEvents', 'none');
+    span_Mass_jq.html(sfapi.wrapToGameValue(massRate * newAmountVal));
+    span_Mass_jq.css('pointerEvents', 'none');
+    span_Demand_jq.css('pointerEvents', 'none');
   });
 }
 

@@ -4445,7 +4445,7 @@ sfui.callResizeWndFleet = () => {
       tabContentZone.find('[tab_id="main-comands"]').css('height', 'calc(100% - 6px)');
       tabContentZone.find('[id="WndFleet_main-comands"]').css('height', '100%').css('box-sizing', 'border-box');
       tabContentZone.find('[id="WndFleet_resume"]').css('top', '').css('bottom', '-4px');
-      let offsetTopResume = $('#WndFleet_resume')[0].offsetTop;
+      const offsetTopResume = $('#WndFleet_resume')[0].offsetTop ?? 0;
       if (tabContentZone.find('[id="WndFleet_main-comands"] div.controls-left-row.controlbox').length > 0) {
         tabContentZone.find('[id="WndFleet_comands_content_cover"]').css('height', offsetTopResume - 60);
         tabContentZone.find('[id="WndFleet_main-comands"] div.controls-left-row.controlbox').css('top', offsetTopResume - 31);
@@ -4458,17 +4458,11 @@ sfui.callResizeWndFleet = () => {
       tabContentZone.find('#WndFleet_main-hold').css('height', '100%');
       tabContentZone.find('#WndFleet_holdtab').css('height', 'calc(100% - 32px)');
       $('#WndFleet_container div.controlbox.controls-center-row').last().css('top', '').css('bottom', '2px');
-      $('#WndFleet_container div.textcontainer-l').first().css('height', 'calc(100% - 2px)');
-      if ($('#WndFleet_container button:contains("Загрузить во флот")').attr('disabled')) {
-        $('#WndFleet_container div.textcontainer-l').eq(1).css('height', 'calc(100% - 60px)');
-        $("#WndFleet_fleetholdform .textbox-d").removeClass('h438').css('height', 'calc(100% - 100px)');
-        $("#WndFleet_fleet_hold").css('height', '50%').css('overflow', 'auto');
-      } else {
-        $('#WndFleet_container div.textcontainer-l').eq(1).css('height', 'calc(100% - 240px)');
-        $('#WndFleet_container #WndFleet_stock_content_cover').css('height', 'calc(100% - 30px)');
-        $('#WndFleet_container div.textbox-d.po').css('height', 'calc(100% - 310px)');
-        $('#WndFleet_container div.textbox-d.po').find('div.controls-left-row.controlbox').css('top', '').css('bottom', '0px');
-      }
+      $('#WndFleet_container div.textcontainer-l').eq(0).css('height', 'calc(100% - 2px)');
+      $('#WndFleet_container div.textcontainer-l').eq(1).css('height', 'calc(100% - 240px)');
+      $('#WndFleet_container div.textbox-d.po').css('height', 'calc(100% - 310px)');
+      $('#WndFleet_container div.textbox-d.po').find('div.controls-left-row.controlbox').css('top', '').css('bottom', '0px');
+      $('#WndFleet_container #WndFleet_stock_content_cover').css('height', 'calc(100% - 30px)');
       break;
     case 'main-settings':
       tabContentZone.find('[tab_id="main-settings"]').css('height', 'calc(100% - 10px)');

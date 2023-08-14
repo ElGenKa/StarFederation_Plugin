@@ -736,7 +736,7 @@ const codeSortPlugins = {
     en: "Planet",
     ru: "Планета"
   },
-  fleetName_Span: {
+  fleet: {
     en: 'Fleet',
     ru: "Флот"
   },
@@ -747,6 +747,10 @@ const codeSortPlugins = {
   automation: {
     en: 'Automation',
     ru: "Автоматизация"
+  },
+  tc: {
+    en: 'Trade Center',
+    ru: "Торговый Центр"
   },
   battle: {
     en: 'Battle',
@@ -3953,11 +3957,7 @@ sfui.plugins.push({
       return 1;
     }
     return 0;
-  },
-  // help: {
-  //   img: 'https://i.postimg.cc/cC6k6hmW/Screenshot-28.jpg',
-  //   text: 'Функция формирующая полетный лист на выбранные планеты для развора ресомата'
-  // }
+  }
 }, {
   sort: 'automation',
   code: 'addLoadMaterialsInQuest',
@@ -3999,6 +3999,48 @@ sfui.plugins.push({
   help: {
     img: 'https://i.postimg.cc/JnrFBJ0c/Screenshot-16.jpg',
     text: 'В задании "Доставить федерации материалы" добавится кнопка для погрузки материала во флот'
+  }
+}, {
+  sort: 'tc',
+  code: 'calcSellIG',
+  type: 'bool',
+  title: sfui_language.AUTO_CALC_CREDIT_SALE,
+  wndCondition: 'WndTrade',
+  callback: sfui.updateSellCredits,
+  callbackCondition: () => {
+    return getWindow('WndTrade').activetab === "federation-sellresourses";
+  },
+  help: {
+    img: 'https://i.postimg.cc/mZdvCdQc/Screenshot-10.jpg',
+    text: 'У меня 0 (все продал хе-хе), но по факту там автоматически будет выставляться сумма кредитов для продажи (сумма чтоб полностью обнулить доступную продажу)'
+  }
+}, {
+  sort: 'tc',
+  code: 'calcTradeCount',
+  type: 'bool',
+  title: sfui_language.TC_ALL_PRICES,
+  wndCondition: 'WndTrade',
+  callback: sfui.calcTradeCount,
+  callbackCondition: () => {
+    return getWindow('WndTrade').activetab === "main-rates";
+  },
+  help: {
+    img: 'https://i.postimg.cc/gkQ1Bntm/Screenshot-13.jpg',
+    text: 'Сумма всех ставок будет подсчитываться и выводится в отдельном окошке. Приблуда для оценивания продаж всего что выставленно.'
+  }
+}, {
+  sort: 'tc',
+  code: 'toSmallTradeRows',
+  type: 'bool',
+  title: sfui_language.SHRINKING_TC_ROWS,
+  wndCondition: 'WndTrade',
+  callback: sfui.updateTradeRow,
+  callbackCondition: () => {
+    return getWindow('WndTrade').activetab === "main-rates";
+  },
+  help: {
+    img: 'https://i.postimg.cc/mrNqDVLg/Screenshot-11.jpg',
+    text: 'Уменьшает высоту строк торговых стравок, таким образом все ставки умещаются на странице без скролла'
   }
 }, {
   sort: 'battle',
@@ -4111,6 +4153,73 @@ sfui.plugins.push({
     return 1
   }
 }, {
+  sort: 'map',
+  code: 'wndSearchCalcSelectedMass',
+  type: 'bool',
+  title: sfui_language.MASS_SELECTED_ASTRO_FIELDS,
+  wndCondition: 'WndSearchMap',
+  help: {
+    img: "https://i.postimg.cc/nLqLpjzC/Screenshot-25.jpg",
+    text: "При выборе полей будет отображатся масса выбранных полей (окно поиска астероидных полей)"
+  },
+  callback: () => {
+    $('#WndSearchMap_planets_totalselectmasslabel').remove();
+    $('#WndSearchMap_planets_totalselectmass').remove();
+    $('#WndSearchMap_planets_totalpages').parent().append(`<span id='WndSearchMap_planets_totalselectmasslabel' class="value_label m2">Масса выбраных полей</span><div data-hint="Масса выбраных полей" id="WndSearchMap_planets_totalselectmass" class="value-n text10 h18 m2" style='padding: 3px;'>0</div>`);
+    $('#WndSearchMap_planets_form div.controls-left-row span.mr4 span.inputCheckBox').parent().attr('onclick', `sfui.WndSearchCalcSelectedMass()`);
+    $(getWindow('WndSearchMap').win).find(`.inputCheckBox`).on('click', sfui.WndSearchCalcSelectedMass);
+  },
+  callbackCondition: () => {
+    return 1
+  }
+}, {
+  sort: 'map',
+  code: 'findGGInMap',
+  type: 'bool',
+  title: sfui_language.DISPLAY_MAP_GATE,
+  wndCondition: 'WndStarMapB',
+  help: {
+    img: "https://i.postimg.cc/FF3YN6YT/Screenshot-24.jpg",
+    text: 'При нажатии правой кнопке на карте будет отображен ближайшие гипер врата'
+  },
+  callback: () => {
+    $('#WndStarMapB_map').mousedown(function (e) {
+      setTimeout(() => {
+        if (e.button === 2) {
+          let minDistance = 999999;
+          let minName = 'Undefined!'
+          let posClick = $('#WndStarMapB_rm_menu_coord').text();
+          let x = sfapi.parseIntExt(posClick.split('-')[0]);
+          let y = sfapi.parseIntExt(posClick.split('-')[1]);
+          for (let key in getWindow('WndStarMapB').map.stars) {
+            let eMap = getWindow('WndStarMapB').map.stars[key];
+            if (eMap.isgg) {
+              let oX = sfapi.parseIntExt(eMap.x);
+              let oY = sfapi.parseIntExt(eMap.y);
+              let distance = Math.sqrt(Math.pow(oX - x, 2) + Math.pow(oY - y, 2));
+              if (minDistance > distance) {
+                minDistance = distance;
+                minName = eMap.id;
+              }
+            }
+          }
+          if ($('#ggFindInfo').length === 0) {
+            $('#divPopupMenu').css('height', '80px')
+            $('#divPopupMenu div.controls-center-col-top').append('<div id="ggFindInfo" class="textcontainer center" style="width: 100%; height: 20px; padding-left: 0px; padding-right: 0px">123</div>')
+            if (999999 > minDistance) {
+              $("#ggFindInfo").html(`<span style="font-size: 9px">${minDistance.toFixed(2)}св. ${minName}</span>`)
+            } else {
+              $("#ggFindInfo").html(`<span style="font-size: 9px">---</span>`)
+            }
+          }
+        }
+      }, 200)
+    });
+  },
+  callbackCondition: () => {
+    return 1
+  }
+}, {
   sort: 'another',
   code: 'usedAnotherBG',
   type: 'bool',
@@ -4161,48 +4270,6 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  sort: 'tc',
-  code: 'calcSellIG',
-  type: 'bool',
-  title: sfui_language.AUTO_CALC_CREDIT_SALE,
-  wndCondition: 'WndTrade',
-  callback: sfui.updateSellCredits,
-  callbackCondition: () => {
-    return getWindow('WndTrade').activetab === "federation-sellresourses";
-  },
-  help: {
-    img: 'https://i.postimg.cc/mZdvCdQc/Screenshot-10.jpg',
-    text: 'У меня 0 (все продал хе-хе), но по факту там автоматически будет выставляться сумма кредитов для продажи (сумма чтоб полностью обнулить доступную продажу)'
-  }
-}, {
-  sort: 'tc',
-  code: 'toSmallTradeRows',
-  type: 'bool',
-  title: sfui_language.SHRINKING_TC_ROWS,
-  wndCondition: 'WndTrade',
-  callback: sfui.updateTradeRow,
-  callbackCondition: () => {
-    return getWindow('WndTrade').activetab === "main-rates";
-  },
-  help: {
-    img: 'https://i.postimg.cc/mrNqDVLg/Screenshot-11.jpg',
-    text: 'Уменьшает высоту строк торговых стравок, таким образом все ставки умещаются на странице без скролла'
-  }
-}, {
-  sort: 'tc',
-  code: 'calcTradeCount',
-  type: 'bool',
-  title: sfui_language.TC_ALL_PRICES,
-  wndCondition: 'WndTrade',
-  callback: sfui.calcTradeCount,
-  callbackCondition: () => {
-    return getWindow('WndTrade').activetab === "main-rates";
-  },
-  help: {
-    img: 'https://i.postimg.cc/gkQ1Bntm/Screenshot-13.jpg',
-    text: 'Сумма всех ставок будет подсчитываться и выводится в отдельном окошке. Приблуда для оценивания продаж всего что выставленно.'
-  }
-}, {
   sort: 'another',
   code: 'adLinksParse',
   type: 'bool',
@@ -4237,26 +4304,6 @@ sfui.plugins.push({
   help: {
     img: 'https://i.postimg.cc/6pZFstFR/Screenshot-14.jpg',
     text: 'Ссылки будут кликабельными и открывать ссылку в новой вкадке барузера'
-  }
-}, {
-  sort: 'another',
-  code: 'wndSearchCalcSelectedMass',
-  type: 'bool',
-  title: sfui_language.MASS_SELECTED_ASTRO_FIELDS,
-  wndCondition: 'WndSearchMap',
-  help: {
-    img: "https://i.postimg.cc/nLqLpjzC/Screenshot-25.jpg",
-    text: "При выборе полей будет отображатся масса выбранных полей (окно поиска астероидных полей)"
-  },
-  callback: () => {
-    $('#WndSearchMap_planets_totalselectmasslabel').remove();
-    $('#WndSearchMap_planets_totalselectmass').remove();
-    $('#WndSearchMap_planets_totalpages').parent().append(`<span id='WndSearchMap_planets_totalselectmasslabel' class="value_label m2">Масса выбраных полей</span><div data-hint="Масса выбраных полей" id="WndSearchMap_planets_totalselectmass" class="value-n text10 h18 m2" style='padding: 3px;'>0</div>`);
-    $('#WndSearchMap_planets_form div.controls-left-row span.mr4 span.inputCheckBox').parent().attr('onclick', `sfui.WndSearchCalcSelectedMass()`);
-    $(getWindow('WndSearchMap').win).find(`.inputCheckBox`).on('click', sfui.WndSearchCalcSelectedMass);
-  },
-  callbackCondition: () => {
-    return 1
   }
 }, {
   sort: 'another',
@@ -4296,53 +4343,6 @@ sfui.plugins.push({
     chatWindow.attachEvent('onMinimize', sfui.callResizeWndPlayersChat);
     chatWindow.attachEvent('onResizeFinish', sfui.callResizeWndPlayersChat);
     chatWindow.attachEvent('onResizeFinish1', () => { });
-  },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  sort: 'another',
-  code: 'findGGInMap',
-  type: 'bool',
-  title: sfui_language.DISPLAY_MAP_GATE,
-  wndCondition: 'WndStarMapB',
-  help: {
-    img: "https://i.postimg.cc/FF3YN6YT/Screenshot-24.jpg",
-    text: 'При нажатии правой кнопке на карте будет отображен ближайшие гипер врата'
-  },
-  callback: () => {
-    $('#WndStarMapB_map').mousedown(function (e) {
-      setTimeout(() => {
-        if (e.button === 2) {
-          let minDistance = 999999;
-          let minName = 'Undefined!'
-          let posClick = $('#WndStarMapB_rm_menu_coord').text();
-          let x = sfapi.parseIntExt(posClick.split('-')[0]);
-          let y = sfapi.parseIntExt(posClick.split('-')[1]);
-          for (let key in getWindow('WndStarMapB').map.stars) {
-            let eMap = getWindow('WndStarMapB').map.stars[key];
-            if (eMap.isgg) {
-              let oX = sfapi.parseIntExt(eMap.x);
-              let oY = sfapi.parseIntExt(eMap.y);
-              let distance = Math.sqrt(Math.pow(oX - x, 2) + Math.pow(oY - y, 2));
-              if (minDistance > distance) {
-                minDistance = distance;
-                minName = eMap.id;
-              }
-            }
-          }
-          if ($('#ggFindInfo').length === 0) {
-            $('#divPopupMenu').css('height', '80px')
-            $('#divPopupMenu div.controls-center-col-top').append('<div id="ggFindInfo" class="textcontainer center" style="width: 100%; height: 20px; padding-left: 0px; padding-right: 0px">123</div>')
-            if (999999 > minDistance) {
-              $("#ggFindInfo").html(`<span style="font-size: 9px">${minDistance.toFixed(2)}св. ${minName}</span>`)
-            } else {
-              $("#ggFindInfo").html(`<span style="font-size: 9px">---</span>`)
-            }
-          }
-        }
-      }, 200)
-    });
   },
   callbackCondition: () => {
     return 1

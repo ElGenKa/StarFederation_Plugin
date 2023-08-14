@@ -730,53 +730,20 @@ const headerData = {
   "x-requested-with": "XMLHttpRequest"
 };
 
-//Описание кодов сортировки
-const codeSortPlugins = {
-  planet: {
-    en: "Planet",
-    ru: "Планета"
-  },
-  fleet: {
-    en: 'Fleet',
-    ru: "Флот"
-  },
-  tech: {
-    en: 'Technologies',
-    ru: "Технологии"
-  },
-  automation: {
-    en: 'Automation',
-    ru: "Автоматизация"
-  },
-  tc: {
-    en: 'Trade Center',
-    ru: "Торговый Центр"
-  },
-  battle: {
-    en: 'Battle',
-    ru: "Боевое"
-  },
-  map: {
-    en: 'Map',
-    ru: 'Карта'
-  },
-  another: {
-    en: 'Another',
-    ru: "Другое"
-  },
-  bottom_panel: {
-    en: 'Bottom panel',
-    ru: 'Нижняя панель'
-  },
-  left_panel: {
-    en: 'Left panel',
-    ru: 'Левая панель'
-  },
-  top_panel: {
-    en: 'Top panel',
-    ru: 'Верхняя панель'
-  },
-}
+//Группы плагинов (псевдо-Enum)
+const PluginsGroups = Object.freeze({
+  planet: { id: 'planet', name: { en: 'Planet', ru: 'Планета' } },
+  fleet: { id: 'fleet', name: { en: 'Fleet', ru: 'Флот' } },
+  tech: { id: 'tech', name: { en: 'Technologies', ru: 'Технологии' } },
+  automation: { id: 'automation', name: { en: 'Automation', ru: 'Автоматизация' } },
+  tc: { id: 'tc', name: { en: 'Trade Center', ru: 'Торговый Центр' } },
+  battle: { id: 'battle', name: { en: 'Battle', ru: 'Боевое' } },
+  map: { id: 'map', name: { en: 'Map', ru: 'Карта' } },
+  top_panel: { id: 'top_panel', name: { en: 'Top panel', ru: 'Верхняя панель' } },
+  left_panel: { id: 'left_panel', name: { en: 'Left panel', ru: 'Левая панель' } },
+  bottom_panel: { id: 'bottom_panel', name: { en: 'Bottom panel', ru: 'Нижняя панель' } },
+  another: { id: 'another', name: { en: 'Another', ru: 'Другое' } },
+});
 
 sfapi.fetch = (url, options = {}) => {
   let basicOptions = {
@@ -1030,103 +997,101 @@ function sfui_preparePlugins() {
     if (typeof scriptPlugin.isAllowMobile === "undefined")
       sfui.plugins[index].isAllowMobile = true;
 
-    if (scriptPlugin.sort)
-      sfui.plugins[index].sort = sfui.plugins[index].sort.toLowerCase().replaceAll(' ', '');
-    else
-      sfui.plugins[index].sort = 'another';
-
-    if (!codeSortPlugins[sfui.plugins[index].sort])
-      sfui.plugins[index].sort = 'another';
+    if (!scriptPlugin.group)
+      sfui.plugins[index].group = PluginsGroups.another;
   });
 }
 
-function sfui_isDrawSetting(scriptPlugin) {
-  let isDraw = false;
-  if (sfui_isMobile) {
-    if (scriptPlugin.isAllowMobile) {
-      isDraw = true;
-    }
-  } else {
-    isDraw = true;
-  }
-  return isDraw;
+function sfui_isDrawSetting(plugin) {
+  return sfui_isMobile ? plugin.isAllowMobile : true;
 }
 
-function sfui_disableSetting(scriptPlugin) {
-  if (scriptPlugin.type === 'bool')
-    sfui.settings[scriptPlugin.code] = false;
+function sfui_disableSetting(plugin) {
+  if (plugin.type === 'bool')
+    sfui.settings[plugin.code] = false;
   else
-    sfui.settings[scriptPlugin.code] = null;
+    sfui.settings[plugin.code] = null;
 }
 
 function sfui_getTitlePlugin(plugin) {
-  let title = plugin.title;
-  if (typeof title === 'object')
-    title = title[sfui_playerInfo.language];
-  return title;
+  if (typeof plugin.title === 'object')
+    return plugin.title[sfui_playerInfo.language];
+
+  return plugin.title;
 }
 
 // Открытие окна настроек
 function sfui_openPreWindow() {
-
-  let html = `<div class='sfui-main-window'>
-  <div class='titlebox w-100 text14'>
-    <span>${sfui_language.SETTINGS_SFUI}${GM_info.script.version}</span>
-  </div>
-  `;
-  html += "<div style='height: 425px; overflow: auto;' class='w-100'>"
-  let htmlHelp = '';
-  let colorRow = '';
+  let html = `
+    <div class='sfui-main-window'>
+    <div class='titlebox w-100 text14'>
+      <span>${sfui_language.SETTINGS_SFUI}${GM_info.script.version}</span>
+    </div>
+    <div style='height: 425px; overflow: auto;' class='w-100'>`;
 
   // Пердварительно перебираем все модули скрипта, дабы установить правильные значения
   sfui_preparePlugins();
 
-  // Выводим все настройки согласно сортировочному списку
-  for (let keySort in codeSortPlugins) {
-    html += `
-    <div class='titlebox w-100 text14' style='height: 25px;'>
-     <span>${codeSortPlugins[keySort][sfui_playerInfo.language]}</span>
-    </div>
-    `
-    sfui.plugins.forEach(scriptPlugin => {
-      if (keySort === scriptPlugin.sort) {
-        let isDraw = sfui_isDrawSetting(scriptPlugin);
-        if (!isDraw)
-          sfui_disableSetting(scriptPlugin);
+  let pluginGroups_htmls = {};
 
-        htmlHelp = '';
-        if (scriptPlugin.help) {
-          htmlHelp = `<button tabindex="-1" class="image_btn noselect m2" type="button" data-hint="${sfui_language.FEATURE_HINT}" style="width:16px;height:16px;" onclick="sound_click(2); sfui.showHelpWindow('${scriptPlugin.code}')"><img width=16 height=16 class="noselect" id="btn_WndHelp_img" border="0" src="/images/icons/i_help_24.png"></button>`
-        } else {
-          htmlHelp = `<div class='m2' style='width: 16px'></div>`
-        }
-        colorRow = '';
-        if (scriptPlugin.isDisabled) {
-          colorRow = ';color: red;';
-        }
-        if (scriptPlugin.type.toLowerCase() === 'bool') {
-          html += `
+  const genHtmlForPlugin = (plugin) => {
+    const isDraw = sfui_isDrawSetting(plugin);
+    if (!isDraw)
+      sfui_disableSetting(plugin);
+
+    let htmlHelp = '';
+    if (plugin.help)
+      htmlHelp = `<button tabindex="-1" class="image_btn noselect m2" type="button" data-hint="${sfui_language.FEATURE_HINT}" style="width:16px;height:16px;" onclick="sound_click(2); sfui.showHelpWindow('${plugin.code}')"><img width=16 height=16 class="noselect" id="btn_WndHelp_img" border="0" src="/images/icons/i_help_24.png"></button>`
+    else
+      htmlHelp = `<div class='m2' style='width: 16px'></div>`
+
+    let colorRow = '';
+    if (plugin.isDisabled)
+      colorRow = 'color: red;';
+
+    if (plugin.type.toLowerCase() === 'bool') {
+      return `
         <div class='controlbox-d ${(!isDraw) ? 'shaddow5' : ''}' style='display: flex;flex-wrap: wrap;padding: 3px;'>
           ${htmlHelp}
-          <span style='margin-top: 3px; margin-bottom: 3px;' data-settingscode='${(isDraw) ? scriptPlugin.code : ''}' class="inputCheckBox ${(isDraw) ? 'sfui_checkbox_settings' : ''}" onmousedown=" ${(!isDraw) ? '' : 'sfui.checkboxCustomAction(this)'}">
+          <span style='margin-top: 3px; margin-bottom: 3px;' data-settingscode='${(isDraw) ? plugin.code : ''}' class="inputCheckBox ${(isDraw) ? 'sfui_checkbox_settings' : ''}" onmousedown=" ${(!isDraw) ? '' : 'sfui.checkboxCustomAction(this)'}">
             <input name="" type="checkbox">
           </span>
-        <span style="padding-top: 3px; padding-left: 7px; ${colorRow}" class="">${sfui_getTitlePlugin(scriptPlugin)}</span></div>
-        `;
-        } else if (scriptPlugin.type.toLowerCase() === 'string') {
-          html += `
-        <div class='controlbox-d' style='padding: 3px;'>
-        ${htmlHelp}
-          <span style='${colorRow}' class="">${sfui_getTitlePlugin(scriptPlugin)}: </span>
-          <input type='text' data-settingscode='${scriptPlugin.code}' oninput='sfui.updateSettingString(this)' id='${scriptPlugin.code}' class='inputText' style='margin-top: 3px;padding: 3px;width: 440px;margin-bottom: 3px;'>
+          <span style="padding-top: 3px; padding-left: 7px; ${colorRow}" class="">${sfui_getTitlePlugin(plugin)}</span>
         </div>`;
-        }
-      }
-    })
+    }
+    if (plugin.type.toLowerCase() === 'string') {
+      return `
+        <div class='controlbox-d' style='padding: 3px;'>
+          ${htmlHelp}
+          <span style='${colorRow}' class="">${sfui_getTitlePlugin(plugin)}: </span>
+          <input type='text' data-settingscode='${plugin.code}' oninput='sfui.updateSettingString(this)' id='${plugin.code}' class='inputText' style='margin-top: 3px;padding: 3px;width: 440px;margin-bottom: 3px;'>
+        </div>`;
+    }
+    return '';
   }
-  html += "</div>";
-  html += `<div class='textbox-d w-100 controls-center-col-top' style='margin-bottom: 5px; flex-flow: row; justify-content: space-between;'><button class='text_btn noselect' onclick='sfui_Init()' data-hint='${sfui_language.RUN_WITH_CUR_SETTINGS}' style='font-size:13px;height:24px;width:125px; margin-top: 5px; margin-left: 10px;'>${sfui_language.RUN_SCRIPT}!</button><button class='text_btn noselect' onclick='sfui.enableAllFunctions()' data-hint='${sfui_language.ACTIVATE_ALL_SETTINGS}' style='font-size:13px;height:24px;width:125px;margin-top: 5px; margin-right: 10px;'>${sfui_language.ACTIVATE_ALL}!</button></div>`;
-  html += `</div>`;
+
+  sfui.plugins.forEach(plugin => {
+    const pluginHtml = genHtmlForPlugin(plugin)
+    const groupIdStr = plugin.group.id;
+    if (!pluginGroups_htmls[groupIdStr]) {
+      pluginGroups_htmls[groupIdStr] = `
+        <div class='titlebox w-100 text14' style='height: 25px;'>
+          <span>${plugin.group.name[sfui_playerInfo.language]}</span>
+        </div>`;
+    }
+    pluginGroups_htmls[groupIdStr] += pluginHtml;
+  });
+
+  for (const groupId in pluginGroups_htmls)
+    html += pluginGroups_htmls[groupId];
+
+  html += `
+    </div>
+    <div class='textbox-d w-100 controls-center-col-top' style='margin-bottom: 5px; flex-flow: row; justify-content: space-between;'>
+      <button class='text_btn noselect' onclick='sfui_Init()' data-hint='${sfui_language.RUN_WITH_CUR_SETTINGS}' style='font-size:13px;height:24px;width:125px; margin-top: 5px; margin-left: 10px;'>${sfui_language.RUN_SCRIPT}!</button>
+      <button class='text_btn noselect' onclick='sfui.enableAllFunctions()' data-hint='${sfui_language.ACTIVATE_ALL_SETTINGS}' style='font-size:13px;height:24px;width:125px;margin-top: 5px; margin-right: 10px;'>${sfui_language.ACTIVATE_ALL}!</button>
+    </div>`;
+
   sfui.CreateWindow('SFUI_win', 600, 545, sfui_language.SCRIPT_SETTINGS, 'flat/i-settings-16.png', html, false, true);
 }
 
@@ -2186,8 +2151,8 @@ sfui.resRemainTime = function () {
   }
 }
 //Добавляем хинт на время до исчерпания ресурса
-sfui.resAnimateChange = (wnd) => {
-  const activeTab = getWindow('WndPlanet').activetab;
+sfui.resAnimateChange = (wnd, delayMS) => {
+  const activeTab = wnd.activetab;
 
   let rows = '';
   if (activeTab === 'wp-materials')
@@ -2197,15 +2162,15 @@ sfui.resAnimateChange = (wnd) => {
   else return;
 
   Array.from(rows).forEach((e, i) => {
-    let targetValues = $(e).find('td');
+    const targetValues = $(e).find('td');
     let amountData = '';
     let massData = '';
     let expenseData = '';
 
-    const span_Demand_jq = targetValues.eq(5).find('span.v-norm');
-    expenseData = span_Demand_jq.data('hint') ?? targetValues[5].innerText;
+    const span_Expense_jq = targetValues.eq(5).find('span.v-norm');
+    expenseData = span_Expense_jq.data('hint') ?? targetValues[5].innerText;
 
-    const expenseVal = sfapi.parseFloatExt(expenseData) / 3600;
+    const expenseVal = sfapi.parseFloatExt(expenseData) / 3600 * (delayMS / 1000);
     if (!expenseVal)
       return;
 
@@ -2227,7 +2192,7 @@ sfui.resAnimateChange = (wnd) => {
     span_Amount_jq.css('pointerEvents', 'none');
     span_Mass_jq.html(sfapi.wrapToGameValue(massRate * newAmountVal));
     span_Mass_jq.css('pointerEvents', 'none');
-    span_Demand_jq.css('pointerEvents', 'none');
+    span_Expense_jq.css('pointerEvents', 'none');
   });
 }
 
@@ -2686,14 +2651,8 @@ empireShow.transportAll = function (fromArray = []) {
   html += `<button id="" onclick="empireShow.loadPresetTransport()" style="padding: 4px;margin-top: 5px; margin-right: 5px; display: none;" class="text_btn noselect">Загрузить</button>`;
   html += `<button style='position: absolute; bottom: 0px; right: 0px;padding: 4px;padding-right: 14px;padding-left: 14px;' id="" onclick="empireShow.runTransport()" style="padding: 4px;margin-top: 5px;" class="text_btn noselect">Запустить</button>`;
   html += `</div>`;
-  let winID = sfui.CreateWindow(idWin,
-    800,
-    500,
-    sfui_language.DELIVER_TO_PLANETS,
-    'i_planets_16.png',
-    html,
-    false,
-    true);
+
+  sfui.CreateWindow(idWin, 800, 500, sfui_language.DELIVER_TO_PLANETS, 'i_planets_16.png', html, false, true);
   empireShow.showsUpWins++;
 };
 
@@ -2984,10 +2943,8 @@ empireShow.recalcMax = async function () {
 }
 
 empireShow.showSelectFleet = async function () {
-  $('.dhx_modal_cover_dv').css("z-index",
-    '99999');
-  $('.dhx_modal_cover_dv').css("display",
-    'block');
+  $('.dhx_modal_cover_dv').css("z-index", '99999');
+  $('.dhx_modal_cover_dv').css("display", 'block');
   try {
     let fleetId = $('.transferAllResFleet').val();
     await fetch(`?m=windows&w=WndFleet&id=${fleetId}`, {
@@ -3025,10 +2982,8 @@ empireShow.showSelectFleet = async function () {
     empireShow.transportCargoSize = 0;
   }
 
-  $('.dhx_modal_cover_dv').css("z-index",
-    '0');
-  $('.dhx_modal_cover_dv').css("display",
-    'none');
+  $('.dhx_modal_cover_dv').css("z-index", '0');
+  $('.dhx_modal_cover_dv').css("display", 'none');
 }
 
 empireShow.transportAllTask = function () { };
@@ -3209,7 +3164,7 @@ sfui.CreateWindow = function (id, w, h, title, icon, html, resizabel, dragabel) 
 };
 
 sfui.plugins.push({
-  sort: 'planet',
+  group: PluginsGroups.planet,
   code: 'showMaxBuilds',
   type: 'bool',
   title: sfui_language.MANY_BUILDINGS,
@@ -3223,7 +3178,7 @@ sfui.plugins.push({
     text: 'В подсказке при постройке будет в скобках написано, сколько зданий взелет.'
   }
 }, {
-  sort: 'planet',
+  group: PluginsGroups.planet,
   code: 'showMaxShipBuild',
   type: 'bool',
   title: sfui_language.MANY_SHIPS,
@@ -3237,7 +3192,7 @@ sfui.plugins.push({
     text: 'Подсчет кол-ва кораблей для строительства.<br>Там где время - минимальновозможное кол-во кораблей для строительства (в скобках значение с учетом населения).<br>Там где ресы и КК - на сколько кораблей хватит данного ресурса'
   }
 }, {
-  sort: 'planet',
+  group: PluginsGroups.planet,
   code: 'switchArchCenters',
   type: 'bool',
   title: sfui_language.SWITCH_ARCH_CENTERS,
@@ -3263,7 +3218,7 @@ sfui.plugins.push({
     text: 'В обзоре империи на влкдке "постройки" если выбрать в фильтре арх. центры то будут кнопки переключения работы арх. центров.'
   }
 }, {
-  sort: 'planet',
+  group: PluginsGroups.planet,
   code: 'addHintToTimeResources',
   type: 'bool',
   title: sfui_language.ENOUGH_RES,
@@ -3277,7 +3232,7 @@ sfui.plugins.push({
     text: 'Если навести на кол-во у потребляемого ресурса будет подсказка с количеством времени, на которое хватит ресурса'
   }
 }, {
-  sort: 'planet',
+  group: PluginsGroups.planet,
   code: 'setMaxLvlBuilds',
   type: 'bool',
   title: sfui_language.SET_MAX_LVL_BUILDS,
@@ -3291,7 +3246,7 @@ sfui.plugins.push({
     text: 'Для построек на планетах будут устанавливаться максимально доступные уровни'
   }
 }, {
-  sort: 'planet',
+  group: PluginsGroups.planet,
   code: 'toSmallWndStarRows',
   type: 'bool',
   title: sfui_language.SHRINKING_SS_ROWS,
@@ -3305,7 +3260,7 @@ sfui.plugins.push({
     text: 'В окне просмотра системы строки будут минимизированны, вся информация сохранится, например размер планет, масса полей, атмосфера (в номере окрашивается в цвет атмосферы и при наведении будет подсказка), владелец и т.д.'
   }
 }, {
-  sort: 'planet',
+  group: PluginsGroups.planet,
   code: 'calcTimeModuleBuilds',
   type: 'bool',
   title: sfui_language.CALC_SC_PROD_TIME,
@@ -3338,7 +3293,7 @@ sfui.plugins.push({
     text: 'В окне производства (конкретного здания) под мощностью будет выводится время в часах, до заверешения производства'
   }
 }, {
-  sort: 'planet',
+  group: PluginsGroups.planet,
   code: 'sortUDOnPlanet',
   type: 'bool',
   title: sfui_language.SORT_UD_SETS_PLANET,
@@ -3352,20 +3307,21 @@ sfui.plugins.push({
     text: "в просмотре УД (планеты или флота) они будут соритроваться по сетам, недостоющие для сета части будут помечены"
   }
 }, {
-  sort: 'planet',
+  group: PluginsGroups.planet,
   code: 'updateValueInStorage',
   type: 'bool',
   title: sfui_language.PLANET_ANIM_PRODUCTION,
   wndCondition: 'WndPlanet',
   callback: () => {
-    clearInterval(getWindow('WndPlanet').timerUpdate);
-    getWindow('WndPlanet').timerUpdate = setInterval(sfui.resAnimateChange, 3000);
+    let wndPlanet = getWindow('WndPlanet');
+    clearInterval(wndPlanet.timerUpdate);
+    wndPlanet.timerUpdate = setInterval(sfui.resAnimateChange, 3000, wndPlanet, 3000);
   },
   callbackCondition: () => {
     return 1
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'showIDFleet',
   type: 'bool',
   title: sfui_language.DISPLAY_FLEET_NUM,
@@ -3375,7 +3331,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'WndFleetsBR',
   type: 'bool',
   title: sfui_language.SHOW_FLEET_BR_IN_FLEETS,
@@ -3403,7 +3359,7 @@ sfui.plugins.push({
     text: 'В окне просмотра флотов рядом с названием флота будет добавляться БР флота'
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'addExternalCommandsFleets',
   type: 'bool',
   title: sfui_language.EXT_BTNS_ON_FLEET,
@@ -3417,7 +3373,7 @@ sfui.plugins.push({
     text: 'В окне выбора колонии будут добавлены кнопки управления флотом'
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'addExternalCommandsFleetsInEmpire',
   type: 'bool',
   title: sfui_language.EXT_BTNS_ON_EMPIRE_OVERVIEW,
@@ -3431,7 +3387,7 @@ sfui.plugins.push({
     text: 'Добавляет кнопки в обзоре империи для управления флотом'
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'calcUsedStorageInFleet',
   type: 'bool',
   title: sfui_language.CALC_FLEET_SPACE,
@@ -3445,7 +3401,7 @@ sfui.plugins.push({
     text: 'При погрузке во время ввода кол-ва погружаемой ставки будет выводиться масса. Работает только для материалов, руды, минералов и т.д., все что имеет статичную массу.'
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'addExternalUnloadFleet',
   type: 'bool',
   title: sfui_language.ADD_BTN_DROP_ALL_NO_FUEL,
@@ -3459,7 +3415,7 @@ sfui.plugins.push({
     text: 'В верху управления флотом добавится третья кнопка, для выгрузки всего кроме топки'
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'enterToSave',
   type: 'bool',
   title: sfui_language.APPLY_CMD_ON_ENTER,
@@ -3484,7 +3440,7 @@ sfui.plugins.push({
     return 0;
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'allowResizeWndFleet',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_FLEET_WND,
@@ -3516,7 +3472,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'wndFleetsUnloadButtons',
   type: 'bool',
   title: 'Добавить кнопки выгрузки в окне флотов',
@@ -3554,7 +3510,7 @@ sfui.plugins.push({
     text: 'В окне просмотра флотов рядом командами флота добавится 2 новые команды - выгрузить все, выгрузить все кроме топлива для флота'
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'noDropHumans',
   type: 'bool',
   title: sfui_language.DO_NOT_UNLOAD_POP,
@@ -3564,7 +3520,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'WndFleetSmartFleets',
   type: 'bool',
   title: sfui_language.FLEET_SHORTCAST_FLEETS,
@@ -3612,7 +3568,7 @@ sfui.plugins.push({
     text: 'В шапке управления флотом будут добавлены кнопки для быстрого доступа к сохранённым флотам. По нажатию ПКМ откроется настройка кнопки, иконка подтягивается автоматически (если подтянулся крестик, значит флот находится под действием нулевого поля и его не видно).'
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'WndFleetSmartFlyLists',
   type: 'bool',
   title: sfui_language.FLEET_SHORTCAST_FLYS,
@@ -3712,7 +3668,7 @@ sfui.plugins.push({
     return 0;
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'WndFleetInfoExrension',
   type: 'bool',
   title: sfui_language.EXP_FLEET_VIEW,
@@ -3764,7 +3720,7 @@ sfui.plugins.push({
     text: 'В окне просмотра сведений о чужом флоте выводит удвоенный БР и расчёт отклонения ракет'
   }
 }, {
-  sort: 'fleet',
+  group: PluginsGroups.fleet,
   code: 'ShuffleUDInFleet',
   type: 'bool',
   title: sfui_language.SORT_UD_SETS_FLEET,
@@ -3778,7 +3734,7 @@ sfui.plugins.push({
     text: "в просмотре УД (планеты или флота) они будут соритроваться по сетам, недостоющие для сета части будут помечены"
   }
 }, {
-  sort: 'tech',
+  group: PluginsGroups.tech,
   code: 'setMaxTech',
   type: 'bool',
   title: sfui_language.SET_MAX_TECH,
@@ -3792,7 +3748,7 @@ sfui.plugins.push({
     text: 'В окне технологий будут устанавливаться максимальные уровни'
   }
 }, {
-  sort: 'tech',
+  group: PluginsGroups.tech,
   code: 'sortTechByTime',
   type: 'bool',
   title: sfui_language.SORT_TECHS,
@@ -3819,7 +3775,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  sort: 'tech',
+  group: PluginsGroups.tech,
   code: 'WndProjectDiffChecker',
   type: 'bool',
   title: sfui_language.DIFF_CHECKER,
@@ -3839,7 +3795,7 @@ sfui.plugins.push({
     text: 'Позволяет сравнить 2 проекта и вывести разницу в модулях и экспоритровать её в органайзер с желаемым множетелем. Кнопка находится в окне проектов кораблей, справа от фильтра. В левую часть прописывается номер исходного проекта, в правую часть - нового. После вставки второго проекта сравнение запустится автоматически. В центральной колонке будет выведен список требуемых для модернизации модулей.'
   }
 }, {
-  sort: 'tech',
+  group: PluginsGroups.tech,
   code: 'saveAsImageButton',
   type: 'bool',
   title: sfui_language.SAVE_PROJECT_AS_IMAGE,
@@ -3865,7 +3821,7 @@ sfui.plugins.push({
     text: 'Добавляет кнопку для сохранения ПОЛНОГО скриншота открытого проекта в буфер обмена'
   }
 }, {
-  sort: 'tech',
+  group: PluginsGroups.tech,
   code: 'addLoadModuleFromCreateShipProject',
   type: 'bool',
   title: sfui_language.ADD_LOAD_BUTTON_IN_DESIGN,
@@ -3897,7 +3853,7 @@ sfui.plugins.push({
     text: 'При выборе модуля, на подсказке о кол-ве модулей на планетах будет кнопка "погрузить все" для открытого флота'
   }
 }, {
-  sort: 'tech',
+  group: PluginsGroups.tech,
   code: 'allowResizeWndShipProject',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_DESIGN_WND,
@@ -3929,7 +3885,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'automation',
+  group: PluginsGroups.automation,
   code: 'autoTransports',
   type: 'bool',
   title: sfui_language.PLANET_TRANSFER,
@@ -3946,7 +3902,7 @@ sfui.plugins.push({
     text: 'Функция формирующая полетный лист на выбранные планеты для развора ресомата'
   }
 }, {
-  sort: 'automation',
+  group: PluginsGroups.automation,
   code: 'autoTransportsInEmpireShow',
   type: 'bool',
   title: sfui_language.PLANET_TRANSFER_EMPIRE_SHOW,
@@ -3959,7 +3915,7 @@ sfui.plugins.push({
     return 0;
   }
 }, {
-  sort: 'automation',
+  group: PluginsGroups.automation,
   code: 'addLoadMaterialsInQuest',
   type: 'bool',
   title: sfui_language.QUEST_ADD_BTN_LOAD,
@@ -4001,7 +3957,7 @@ sfui.plugins.push({
     text: 'В задании "Доставить федерации материалы" добавится кнопка для погрузки материала во флот'
   }
 }, {
-  sort: 'tc',
+  group: PluginsGroups.tc,
   code: 'calcSellIG',
   type: 'bool',
   title: sfui_language.AUTO_CALC_CREDIT_SALE,
@@ -4015,7 +3971,7 @@ sfui.plugins.push({
     text: 'У меня 0 (все продал хе-хе), но по факту там автоматически будет выставляться сумма кредитов для продажи (сумма чтоб полностью обнулить доступную продажу)'
   }
 }, {
-  sort: 'tc',
+  group: PluginsGroups.tc,
   code: 'calcTradeCount',
   type: 'bool',
   title: sfui_language.TC_ALL_PRICES,
@@ -4029,7 +3985,7 @@ sfui.plugins.push({
     text: 'Сумма всех ставок будет подсчитываться и выводится в отдельном окошке. Приблуда для оценивания продаж всего что выставленно.'
   }
 }, {
-  sort: 'tc',
+  group: PluginsGroups.tc,
   code: 'toSmallTradeRows',
   type: 'bool',
   title: sfui_language.SHRINKING_TC_ROWS,
@@ -4043,7 +3999,7 @@ sfui.plugins.push({
     text: 'Уменьшает высоту строк торговых стравок, таким образом все ставки умещаются на странице без скролла'
   }
 }, {
-  sort: 'battle',
+  group: PluginsGroups.battle,
   code: 'battleLogTable',
   type: 'bool',
   title: sfui_language.ADD_COMBAT_MASH,
@@ -4057,7 +4013,7 @@ sfui.plugins.push({
     text: 'В просмотре боя будет отрисовываться специальная сетка, отображащая корабли на позициях и другую информацию'
   }
 }, {
-  sort: 'battle',
+  group: PluginsGroups.battle,
   code: 'allowResizeWndBattle',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_BATTLE_WINDOW,
@@ -4089,7 +4045,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'battle',
+  group: PluginsGroups.battle,
   code: 'allowResizeWndControlBattle',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_SELECT_TARGET_WND,
@@ -4121,7 +4077,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'battle',
+  group: PluginsGroups.battle,
   code: 'allowResizeWndBattleLogs',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_BATTLE_WND_ANOTHER,
@@ -4153,7 +4109,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'map',
+  group: PluginsGroups.map,
   code: 'wndSearchCalcSelectedMass',
   type: 'bool',
   title: sfui_language.MASS_SELECTED_ASTRO_FIELDS,
@@ -4173,7 +4129,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'map',
+  group: PluginsGroups.map,
   code: 'findGGInMap',
   type: 'bool',
   title: sfui_language.DISPLAY_MAP_GATE,
@@ -4220,7 +4176,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'another',
+  group: PluginsGroups.another,
   code: 'usedAnotherBG',
   type: 'bool',
   title: sfui_language.USE_CUSTOM_BG,
@@ -4230,7 +4186,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  sort: 'another',
+  group: PluginsGroups.another,
   code: 'anotherBG',
   type: 'string',
   title: sfui_language.LINK_BG,
@@ -4240,7 +4196,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  sort: 'another',
+  group: PluginsGroups.another,
   code: 'removeMaxHeightWndNewMessage',
   type: 'bool',
   title: sfui_language.OPT_NEW_MSG_WIN,
@@ -4270,7 +4226,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  sort: 'another',
+  group: PluginsGroups.another,
   code: 'adLinksParse',
   type: 'bool',
   title: sfui_language.ADS_LINKS,
@@ -4286,7 +4242,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  sort: 'another',
+  group: PluginsGroups.another,
   code: 'wndTradeParseLink',
   type: 'bool',
   title: sfui_language.ADS_LINKS_IN_SC,
@@ -4306,7 +4262,7 @@ sfui.plugins.push({
     text: 'Ссылки будут кликабельными и открывать ссылку в новой вкадке барузера'
   }
 }, {
-  sort: 'another',
+  group: PluginsGroups.another,
   code: 'shuffleUDInTrade',
   type: 'bool',
   title: sfui_language.SORT_UD_SETS_TRADE_FEDERATION,
@@ -4316,7 +4272,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'another',
+  group: PluginsGroups.another,
   code: 'allowResizeWndPlayersChat',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_CHAT_WND,
@@ -4348,7 +4304,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'another',
+  group: PluginsGroups.another,
   code: 'removeTabIndex',
   type: 'bool',
   title: sfui_language.REMOVE_DISABLING_TABS,
@@ -4358,7 +4314,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  sort: 'bottom_panel',
+  group: PluginsGroups.bottom_panel,
   code: 'addFavoriteBottonInBottom',
   type: 'bool',
   title: sfui_language.ADD_FAV_BTN_BOTTOM,
@@ -4382,7 +4338,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  sort: 'bottom_panel',
+  group: PluginsGroups.bottom_panel,
   code: 'addCalcBottonInBottom',
   type: 'bool',
   title: sfui_language.ADD_CALC_BTN_BOTTOM,
@@ -8063,7 +8019,8 @@ sfdata.hulls = [
       "en": "Flagship"
     },
     "id": "26"
-  }];
+  }
+];
 
 //Стили
 let styleString = `

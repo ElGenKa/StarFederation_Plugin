@@ -3794,27 +3794,21 @@ sfui.plugins.push({
   title: sfui_language.SORT_TECHS,
   wndCondition: 'WndScience',
   callback: () => {
-    let newList = $('#WndScience_science_seq_form .h24').sort((e1, e2) => {
-      let e1t = sfapi.parseIntExt(e1.childNodes[5].getAttribute('sec'));
-      let e2t = sfapi.parseIntExt(e2.childNodes[5].getAttribute('sec'));
-      if (!e1.childNodes[5].hasAttribute('sec')) {
-        if (e1.childNodes[2].innerText === sfui_language.FREE)
-          e1t = 1000000000000000;
-        else
-          e1t = 1000000000000;
-      }
-      if (!e2.childNodes[5].hasAttribute('sec')) {
-        if (e2.childNodes[2].innerText === sfui_language.FREE)
-          e2t = 1000000000000000;
-        else
-          e2t = 1000000000000;
-      }
-      return e1t - e2t;
-    });
+    const newList = $('#WndScience_science_seq_form .h24:not(:has(> td[colspan]))')
+      .sort((e1, e2) => {
+        let e1t = Number.MAX_SAFE_INTEGER;
+        let e2t = Number.MAX_SAFE_INTEGER;
+
+        if (e1.childNodes[5].hasAttribute('sec'))
+          e1t = sfapi.parseIntExt(e1.childNodes[5].getAttribute('sec'));
+
+        if (e2.childNodes[5].hasAttribute('sec'))
+          e2t = sfapi.parseIntExt(e2.childNodes[5].getAttribute('sec'));
+
+        return e1t - e2t;
+      });
     let newHTML = "";
-    newList.each((i, e) => {
-      newHTML += e.outerHTML
-    });
+    newList.each((i, e) => { newHTML += e.outerHTML });
     $("#WndScience_science_seq_form .data_table.p0 tbody")[1].innerHTML = newHTML;
   },
   callbackCondition: () => {

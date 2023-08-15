@@ -2260,6 +2260,7 @@ sfui.udShufflePlanet = (wnd) => {
     sfui.udShuffle(wnd, 'WndPlanet');
   }
 }
+// Сортировка кнопок построек внизу окна "Управление планетами"
 sfui.sortBuildsButtons = (wnd) => {
   if (wnd.win.idd !== 'WndPlanet')
     return;

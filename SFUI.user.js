@@ -998,7 +998,9 @@ function sfui_preparePlugins() {
       sfui.plugins[index].isAllowMobile = true;
 
     if (!scriptPlugin.group)
-      sfui.plugins[index].group = pluginsGroups.another;
+      sfui.plugins[index].group = pluginsGroups.another.id;
+    else if (!pluginsGroups[scriptPlugin.group])
+      sfui.plugins[index].group = pluginsGroups.another.id;
   });
 }
 
@@ -1072,14 +1074,14 @@ function sfui_openPreWindow() {
 
   sfui.plugins.forEach(plugin => {
     const pluginHtml = genHtmlForPlugin(plugin)
-    const groupIdStr = plugin.group.id;
-    if (!pluginGroups_htmls[groupIdStr]) {
-      pluginGroups_htmls[groupIdStr] = `
+    const groupId = plugin.group;
+    if (!pluginGroups_htmls[groupId]) {
+      pluginGroups_htmls[groupId] = `
         <div class='titlebox w-100 text14' style='height: 25px;'>
-          <span>${plugin.group.name[sfui_playerInfo.language]}</span>
+          <span>${pluginsGroups[groupId].name[sfui_playerInfo.language]}</span>
         </div>`;
     }
-    pluginGroups_htmls[groupIdStr] += pluginHtml;
+    pluginGroups_htmls[groupId] += pluginHtml;
   });
 
   for (const groupId in pluginGroups_htmls)
@@ -3164,7 +3166,7 @@ sfui.CreateWindow = function (id, w, h, title, icon, html, resizabel, dragabel) 
 };
 
 sfui.plugins.push({
-  group: pluginsGroups.planet,
+  group: pluginsGroups.planet.id,
   code: 'showMaxBuilds',
   type: 'bool',
   title: sfui_language.MANY_BUILDINGS,
@@ -3178,7 +3180,7 @@ sfui.plugins.push({
     text: 'В подсказке при постройке будет в скобках написано, сколько зданий взелет.'
   }
 }, {
-  group: pluginsGroups.planet,
+  group: pluginsGroups.planet.id,
   code: 'showMaxShipBuild',
   type: 'bool',
   title: sfui_language.MANY_SHIPS,
@@ -3192,7 +3194,7 @@ sfui.plugins.push({
     text: 'Подсчет кол-ва кораблей для строительства.<br>Там где время - минимальновозможное кол-во кораблей для строительства (в скобках значение с учетом населения).<br>Там где ресы и КК - на сколько кораблей хватит данного ресурса'
   }
 }, {
-  group: pluginsGroups.planet,
+  group: pluginsGroups.planet.id,
   code: 'switchArchCenters',
   type: 'bool',
   title: sfui_language.SWITCH_ARCH_CENTERS,
@@ -3218,7 +3220,7 @@ sfui.plugins.push({
     text: 'В обзоре империи на влкдке "постройки" если выбрать в фильтре арх. центры то будут кнопки переключения работы арх. центров.'
   }
 }, {
-  group: pluginsGroups.planet,
+  group: pluginsGroups.planet.id,
   code: 'addHintToTimeResources',
   type: 'bool',
   title: sfui_language.ENOUGH_RES,
@@ -3232,7 +3234,7 @@ sfui.plugins.push({
     text: 'Если навести на кол-во у потребляемого ресурса будет подсказка с количеством времени, на которое хватит ресурса'
   }
 }, {
-  group: pluginsGroups.planet,
+  group: pluginsGroups.planet.id,
   code: 'setMaxLvlBuilds',
   type: 'bool',
   title: sfui_language.SET_MAX_LVL_BUILDS,
@@ -3246,7 +3248,7 @@ sfui.plugins.push({
     text: 'Для построек на планетах будут устанавливаться максимально доступные уровни'
   }
 }, {
-  group: pluginsGroups.planet,
+  group: pluginsGroups.planet.id,
   code: 'toSmallWndStarRows',
   type: 'bool',
   title: sfui_language.SHRINKING_SS_ROWS,
@@ -3260,7 +3262,7 @@ sfui.plugins.push({
     text: 'В окне просмотра системы строки будут минимизированны, вся информация сохранится, например размер планет, масса полей, атмосфера (в номере окрашивается в цвет атмосферы и при наведении будет подсказка), владелец и т.д.'
   }
 }, {
-  group: pluginsGroups.planet,
+  group: pluginsGroups.planet.id,
   code: 'calcTimeModuleBuilds',
   type: 'bool',
   title: sfui_language.CALC_SC_PROD_TIME,
@@ -3293,7 +3295,7 @@ sfui.plugins.push({
     text: 'В окне производства (конкретного здания) под мощностью будет выводится время в часах, до заверешения производства'
   }
 }, {
-  group: pluginsGroups.planet,
+  group: pluginsGroups.planet.id,
   code: 'sortUDOnPlanet',
   type: 'bool',
   title: sfui_language.SORT_UD_SETS_PLANET,
@@ -3307,7 +3309,7 @@ sfui.plugins.push({
     text: "в просмотре УД (планеты или флота) они будут соритроваться по сетам, недостоющие для сета части будут помечены"
   }
 }, {
-  group: pluginsGroups.planet,
+  group: pluginsGroups.planet.id,
   code: 'updateValueInStorage',
   type: 'bool',
   title: sfui_language.PLANET_ANIM_PRODUCTION,
@@ -3321,7 +3323,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'showIDFleet',
   type: 'bool',
   title: sfui_language.DISPLAY_FLEET_NUM,
@@ -3331,7 +3333,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'WndFleetsBR',
   type: 'bool',
   title: sfui_language.SHOW_FLEET_BR_IN_FLEETS,
@@ -3359,7 +3361,7 @@ sfui.plugins.push({
     text: 'В окне просмотра флотов рядом с названием флота будет добавляться БР флота'
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'addExternalCommandsFleets',
   type: 'bool',
   title: sfui_language.EXT_BTNS_ON_FLEET,
@@ -3373,7 +3375,7 @@ sfui.plugins.push({
     text: 'В окне выбора колонии будут добавлены кнопки управления флотом'
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'addExternalCommandsFleetsInEmpire',
   type: 'bool',
   title: sfui_language.EXT_BTNS_ON_EMPIRE_OVERVIEW,
@@ -3387,7 +3389,7 @@ sfui.plugins.push({
     text: 'Добавляет кнопки в обзоре империи для управления флотом'
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'calcUsedStorageInFleet',
   type: 'bool',
   title: sfui_language.CALC_FLEET_SPACE,
@@ -3401,7 +3403,7 @@ sfui.plugins.push({
     text: 'При погрузке во время ввода кол-ва погружаемой ставки будет выводиться масса. Работает только для материалов, руды, минералов и т.д., все что имеет статичную массу.'
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'addExternalUnloadFleet',
   type: 'bool',
   title: sfui_language.ADD_BTN_DROP_ALL_NO_FUEL,
@@ -3415,7 +3417,7 @@ sfui.plugins.push({
     text: 'В верху управления флотом добавится третья кнопка, для выгрузки всего кроме топки'
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'enterToSave',
   type: 'bool',
   title: sfui_language.APPLY_CMD_ON_ENTER,
@@ -3440,7 +3442,7 @@ sfui.plugins.push({
     return 0;
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'allowResizeWndFleet',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_FLEET_WND,
@@ -3472,7 +3474,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'wndFleetsUnloadButtons',
   type: 'bool',
   title: 'Добавить кнопки выгрузки в окне флотов',
@@ -3510,7 +3512,7 @@ sfui.plugins.push({
     text: 'В окне просмотра флотов рядом командами флота добавится 2 новые команды - выгрузить все, выгрузить все кроме топлива для флота'
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'noDropHumans',
   type: 'bool',
   title: sfui_language.DO_NOT_UNLOAD_POP,
@@ -3520,7 +3522,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'WndFleetSmartFleets',
   type: 'bool',
   title: sfui_language.FLEET_SHORTCAST_FLEETS,
@@ -3568,7 +3570,7 @@ sfui.plugins.push({
     text: 'В шапке управления флотом будут добавлены кнопки для быстрого доступа к сохранённым флотам. По нажатию ПКМ откроется настройка кнопки, иконка подтягивается автоматически (если подтянулся крестик, значит флот находится под действием нулевого поля и его не видно).'
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'WndFleetSmartFlyLists',
   type: 'bool',
   title: sfui_language.FLEET_SHORTCAST_FLYS,
@@ -3668,7 +3670,7 @@ sfui.plugins.push({
     return 0;
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'WndFleetInfoExrension',
   type: 'bool',
   title: sfui_language.EXP_FLEET_VIEW,
@@ -3720,7 +3722,7 @@ sfui.plugins.push({
     text: 'В окне просмотра сведений о чужом флоте выводит удвоенный БР и расчёт отклонения ракет'
   }
 }, {
-  group: pluginsGroups.fleet,
+  group: pluginsGroups.fleet.id,
   code: 'ShuffleUDInFleet',
   type: 'bool',
   title: sfui_language.SORT_UD_SETS_FLEET,
@@ -3734,7 +3736,7 @@ sfui.plugins.push({
     text: "в просмотре УД (планеты или флота) они будут соритроваться по сетам, недостоющие для сета части будут помечены"
   }
 }, {
-  group: pluginsGroups.tech,
+  group: pluginsGroups.tech.id,
   code: 'setMaxTech',
   type: 'bool',
   title: sfui_language.SET_MAX_TECH,
@@ -3748,7 +3750,7 @@ sfui.plugins.push({
     text: 'В окне технологий будут устанавливаться максимальные уровни'
   }
 }, {
-  group: pluginsGroups.tech,
+  group: pluginsGroups.tech.id,
   code: 'sortTechByTime',
   type: 'bool',
   title: sfui_language.SORT_TECHS,
@@ -3775,7 +3777,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  group: pluginsGroups.tech,
+  group: pluginsGroups.tech.id,
   code: 'WndProjectDiffChecker',
   type: 'bool',
   title: sfui_language.DIFF_CHECKER,
@@ -3795,7 +3797,7 @@ sfui.plugins.push({
     text: 'Позволяет сравнить 2 проекта и вывести разницу в модулях и экспоритровать её в органайзер с желаемым множетелем. Кнопка находится в окне проектов кораблей, справа от фильтра. В левую часть прописывается номер исходного проекта, в правую часть - нового. После вставки второго проекта сравнение запустится автоматически. В центральной колонке будет выведен список требуемых для модернизации модулей.'
   }
 }, {
-  group: pluginsGroups.tech,
+  group: pluginsGroups.tech.id,
   code: 'saveAsImageButton',
   type: 'bool',
   title: sfui_language.SAVE_PROJECT_AS_IMAGE,
@@ -3821,7 +3823,7 @@ sfui.plugins.push({
     text: 'Добавляет кнопку для сохранения ПОЛНОГО скриншота открытого проекта в буфер обмена'
   }
 }, {
-  group: pluginsGroups.tech,
+  group: pluginsGroups.tech.id,
   code: 'addLoadModuleFromCreateShipProject',
   type: 'bool',
   title: sfui_language.ADD_LOAD_BUTTON_IN_DESIGN,
@@ -3853,7 +3855,7 @@ sfui.plugins.push({
     text: 'При выборе модуля, на подсказке о кол-ве модулей на планетах будет кнопка "погрузить все" для открытого флота'
   }
 }, {
-  group: pluginsGroups.tech,
+  group: pluginsGroups.tech.id,
   code: 'allowResizeWndShipProject',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_DESIGN_WND,
@@ -3885,7 +3887,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.automation,
+  group: pluginsGroups.automation.id,
   code: 'autoTransports',
   type: 'bool',
   title: sfui_language.PLANET_TRANSFER,
@@ -3902,7 +3904,7 @@ sfui.plugins.push({
     text: 'Функция формирующая полетный лист на выбранные планеты для развора ресомата'
   }
 }, {
-  group: pluginsGroups.automation,
+  group: pluginsGroups.automation.id,
   code: 'autoTransportsInEmpireShow',
   type: 'bool',
   title: sfui_language.PLANET_TRANSFER_EMPIRE_SHOW,
@@ -3915,7 +3917,7 @@ sfui.plugins.push({
     return 0;
   }
 }, {
-  group: pluginsGroups.automation,
+  group: pluginsGroups.automation.id,
   code: 'addLoadMaterialsInQuest',
   type: 'bool',
   title: sfui_language.QUEST_ADD_BTN_LOAD,
@@ -3957,7 +3959,7 @@ sfui.plugins.push({
     text: 'В задании "Доставить федерации материалы" добавится кнопка для погрузки материала во флот'
   }
 }, {
-  group: pluginsGroups.tc,
+  group: pluginsGroups.tc.id,
   code: 'calcSellIG',
   type: 'bool',
   title: sfui_language.AUTO_CALC_CREDIT_SALE,
@@ -3971,7 +3973,7 @@ sfui.plugins.push({
     text: 'У меня 0 (все продал хе-хе), но по факту там автоматически будет выставляться сумма кредитов для продажи (сумма чтоб полностью обнулить доступную продажу)'
   }
 }, {
-  group: pluginsGroups.tc,
+  group: pluginsGroups.tc.id,
   code: 'calcTradeCount',
   type: 'bool',
   title: sfui_language.TC_ALL_PRICES,
@@ -3985,7 +3987,7 @@ sfui.plugins.push({
     text: 'Сумма всех ставок будет подсчитываться и выводится в отдельном окошке. Приблуда для оценивания продаж всего что выставленно.'
   }
 }, {
-  group: pluginsGroups.tc,
+  group: pluginsGroups.tc.id,
   code: 'toSmallTradeRows',
   type: 'bool',
   title: sfui_language.SHRINKING_TC_ROWS,
@@ -3999,7 +4001,7 @@ sfui.plugins.push({
     text: 'Уменьшает высоту строк торговых стравок, таким образом все ставки умещаются на странице без скролла'
   }
 }, {
-  group: pluginsGroups.battle,
+  group: pluginsGroups.battle.id,
   code: 'battleLogTable',
   type: 'bool',
   title: sfui_language.ADD_COMBAT_MASH,
@@ -4013,7 +4015,7 @@ sfui.plugins.push({
     text: 'В просмотре боя будет отрисовываться специальная сетка, отображащая корабли на позициях и другую информацию'
   }
 }, {
-  group: pluginsGroups.battle,
+  group: pluginsGroups.battle.id,
   code: 'allowResizeWndBattle',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_BATTLE_WINDOW,
@@ -4045,7 +4047,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.battle,
+  group: pluginsGroups.battle.id,
   code: 'allowResizeWndControlBattle',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_SELECT_TARGET_WND,
@@ -4077,7 +4079,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.battle,
+  group: pluginsGroups.battle.id,
   code: 'allowResizeWndBattleLogs',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_BATTLE_WND_ANOTHER,
@@ -4109,7 +4111,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.map,
+  group: pluginsGroups.map.id,
   code: 'wndSearchCalcSelectedMass',
   type: 'bool',
   title: sfui_language.MASS_SELECTED_ASTRO_FIELDS,
@@ -4129,7 +4131,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.map,
+  group: pluginsGroups.map.id,
   code: 'findGGInMap',
   type: 'bool',
   title: sfui_language.DISPLAY_MAP_GATE,
@@ -4176,7 +4178,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.another,
+  group: pluginsGroups.another.id,
   code: 'usedAnotherBG',
   type: 'bool',
   title: sfui_language.USE_CUSTOM_BG,
@@ -4186,7 +4188,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  group: pluginsGroups.another,
+  group: pluginsGroups.another.id,
   code: 'anotherBG',
   type: 'string',
   title: sfui_language.LINK_BG,
@@ -4196,7 +4198,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  group: pluginsGroups.another,
+  group: pluginsGroups.another.id,
   code: 'removeMaxHeightWndNewMessage',
   type: 'bool',
   title: sfui_language.OPT_NEW_MSG_WIN,
@@ -4226,7 +4228,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  group: pluginsGroups.another,
+  group: pluginsGroups.another.id,
   code: 'adLinksParse',
   type: 'bool',
   title: sfui_language.ADS_LINKS,
@@ -4242,7 +4244,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  group: pluginsGroups.another,
+  group: pluginsGroups.another.id,
   code: 'wndTradeParseLink',
   type: 'bool',
   title: sfui_language.ADS_LINKS_IN_SC,
@@ -4262,7 +4264,7 @@ sfui.plugins.push({
     text: 'Ссылки будут кликабельными и открывать ссылку в новой вкадке барузера'
   }
 }, {
-  group: pluginsGroups.another,
+  group: pluginsGroups.another.id,
   code: 'shuffleUDInTrade',
   type: 'bool',
   title: sfui_language.SORT_UD_SETS_TRADE_FEDERATION,
@@ -4272,7 +4274,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.another,
+  group: pluginsGroups.another.id,
   code: 'allowResizeWndPlayersChat',
   type: 'bool',
   title: sfui_language.ALLOW_RESIZE_CHAT_WND,
@@ -4304,7 +4306,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.another,
+  group: pluginsGroups.another.id,
   code: 'removeTabIndex',
   type: 'bool',
   title: sfui_language.REMOVE_DISABLING_TABS,
@@ -4314,7 +4316,7 @@ sfui.plugins.push({
     return 1
   }
 }, {
-  group: pluginsGroups.bottom_panel,
+  group: pluginsGroups.bottom_panel.id,
   code: 'addFavoriteBottonInBottom',
   type: 'bool',
   title: sfui_language.ADD_FAV_BTN_BOTTOM,
@@ -4338,7 +4340,7 @@ sfui.plugins.push({
     return 1;
   }
 }, {
-  group: pluginsGroups.bottom_panel,
+  group: pluginsGroups.bottom_panel.id,
   code: 'addCalcBottonInBottom',
   type: 'bool',
   title: sfui_language.ADD_CALC_BTN_BOTTOM,

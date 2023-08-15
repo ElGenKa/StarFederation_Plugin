@@ -622,6 +622,10 @@ let sfui_language = {
     ru: 'Сортировать сеты уд в просмотре планеты',
     en: 'Sort AD sets in planet view'
   },
+  SORT_BUILDS_BUTTONS: {
+    ru: 'Сортировать кнопки построек в нижней панели планеты/орбиты/космобазы',
+    en: 'Sort building\'s buttons on bottom panel of planet/orbit/cosmobase'
+  },
   SORT_UD_SETS_TRADE_FEDERATION: {
     ru: 'Сортировать УД в окне покупки у федерации',
     en: 'Sort AD in buy from federation window'
@@ -2256,6 +2260,41 @@ sfui.udShufflePlanet = (wnd) => {
     sfui.udShuffle(wnd, 'WndPlanet');
   }
 }
+sfui.sortBuildsButtons = (wnd) => {
+  if (wnd.win.idd !== 'WndPlanet')
+    return;
+
+  const parentElement_jq = $('#WndPlanet_buildings_buttons');
+  if (parentElement_jq[0].dataset.sorted)
+    return;
+
+  const buildsButtons_jq = parentElement_jq.children(`div[onclick*="getWindow('WndBuilding')"]`);
+  const buildsIdsAndBtnsSorted = buildsButtons_jq.map((i, button) => {
+    const onclickStr = button.getAttribute('onclick');
+    const buildId = parseInt(/show\(.+bid=(\d+)/g.exec(onclickStr)[1]);
+    const absOrder = sfdata.buildsOrderedIds.indexOf(buildId);
+    return { buildId, absOrder, button };
+  }).get().sort((b1, b2) => {
+    if (b1.absOrder === b2.absOrder)
+      return 0;
+    return b1.absOrder < b2.absOrder ? -1 : 1;
+  });
+
+  let i = 0;
+  let allOrederedChilds = [];
+  parentElement_jq[0].childNodes.forEach(node => {
+    if (buildsButtons_jq[i] !== node) {
+      allOrederedChilds.push(node);
+      return;
+    }
+
+    allOrederedChilds.push(buildsIdsAndBtnsSorted[i].button);
+    i += 1;
+  });
+
+  parentElement_jq[0].replaceChildren(...allOrederedChilds);
+  parentElement_jq[0].dataset.sorted = true;
+}
 // Сортировка УД в магазине Федерации
 sfui.udShuffleTrade = (wnd) => {
   if (wnd.win.idd === 'WndTrade' && wnd.activetab === 'byfederation-devices') {
@@ -3307,6 +3346,20 @@ sfui.plugins.push({
   help: {
     img: "https://i.postimg.cc/GmwwrMsx/Screenshot-26.jpg",
     text: "в просмотре УД (планеты или флота) они будут соритроваться по сетам, недостоющие для сета части будут помечены"
+  }
+}, {
+  group: pluginsGroups.planet.id,
+  code: 'sortBuildsButtons',
+  type: 'bool',
+  title: sfui_language.SORT_BUILDS_BUTTONS,
+  wndCondition: 'WndPlanet',
+  callback: sfui.sortBuildsButtons,
+  callbackCondition: () => {
+    return 1
+  },
+  help: {
+    img: "https://i.postimg.cc/DwRPz2t2/Sort-Buildings-Buttons.png",
+    text: "Кнопки построек в нижней панели окна 'Управление планетами' будут отображаться в том же порядке, в котором они располагаются во вкладке 'Строительство' - начиная с первой вкладки построек на поверхности, заканчивая последней вкладкой модулей космобазы."
   }
 }, {
   group: pluginsGroups.planet.id,
@@ -7156,661 +7209,758 @@ sfdata.questions = [
     },
     "icon": "/images/quests/59-32.png",
     "color": "#ff4200"
-  }];
-
+  }
+];
 //Постройки
-sfdata.buildings = [{
-  "name": {
-    "ru": "Орбитальная база",
-    "en": "Orbital Base"
-  },
-  "id": "7",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Жилой модуль",
-    "en": "Residential Module"
-  },
-  "id": "31",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Орбитальный склад",
-    "en": "Orbital Warehouse"
-  },
-  "id": "63",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Гиперврата",
-    "en": "Hypergates"
-  },
-  "id": "68",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Орбитальная обсерватория",
-    "en": "Orbital Observatory"
-  },
-  "id": "69",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Радарная станция",
-    "en": "Radar Station"
-  },
-  "id": "72",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Генератор поля маскировки",
-    "en": "Masking Field Generator"
-  },
-  "id": "73",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Орбитальное казино",
-    "en": "Orbital Casino"
-  },
-  "id": "85",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Школа командиров",
-    "en": "Commander School"
-  },
-  "id": "88",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Служба спасения командиров",
-    "en": "Rescue Service"
-  },
-  "id": "89",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Логистический центр",
-    "en": "Logistics Center"
-  },
-  "id": "97",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Фазовый усилитель",
-    "en": "Phase Amp"
-  },
-  "id": "98",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Детектор аномалий",
-    "en": "Anomaly Detector"
-  },
-  "id": "100",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Орбитальная СЭС",
-    "en": "Orbital PSS"
-  },
-  "id": "30",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Орбитальный термоядерный реактор",
-    "en": "Orbital Thermonuclear Reactor"
-  },
-  "id": "67",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Орбитальный гравитационный реактор",
-    "en": "Orbital Gravity Reactor"
-  },
-  "id": "107",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Боевая платформа",
-    "en": "Combat Platform"
-  },
-  "id": "84",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Дефлекторная станция",
-    "en": "Deflector Station"
-  },
-  "id": "103",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Центр обороны",
-    "en": "Defense Center"
-  },
-  "id": "104",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Лазерная боевая платформа",
-    "en": "Laser Combat Platform"
-  },
-  "id": "112",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Орудийная боевая платформа",
-    "en": "Gun Combat Platform"
-  },
-  "id": "113",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Ракетная боевая платформа",
-    "en": "Missile Combat Platform"
-  },
-  "id": "114",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Тяжелая боевая платформа",
-    "en": "Heavy Combat Platform"
-  },
-  "id": "115",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Орбитальный ангар",
-    "en": "Orbital Hangar"
-  },
-  "id": "55",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Орбитальный док",
-    "en": "Orbital Dock"
-  },
-  "id": "56",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Командный центр",
-    "en": "Command Center"
-  },
-  "id": "58",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Ремонтные мастерские",
-    "en": "Repair Shops"
-  },
-  "id": "80",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Торговый центр",
-    "en": "Trade Center"
-  },
-  "id": "64",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Торговый склад",
-    "en": "Trade Warehouse"
-  },
-  "id": "65",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Навигационный центр",
-    "en": "Navigation Center"
-  },
-  "id": "96",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Обогатитель изотопов гелия",
-    "en": "Helium Isotope Enricher"
-  },
-  "id": "29",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Экстрактор темной материи",
-    "en": "Dark Matter Extractor"
-  },
-  "id": "105",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Аванпост",
-    "en": "Outpost"
-  },
-  "id": "118",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Цитадель",
-    "en": "Citadel"
-  },
-  "id": "119",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Космический причал",
-    "en": "Space Pier"
-  },
-  "id": "108",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Торговая станция",
-    "en": "Trade Station"
-  },
-  "id": "102",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Преобразователь материи",
-    "en": "Matter Converter"
-  },
-  "id": "101",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Гравитационный накопитель",
-    "en": "Gravity Accumulator"
-  },
-  "id": "106",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Центр переработки",
-    "en": "Processing Center"
-  },
-  "id": "116",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Космобаза",
-    "en": "Spacebase"
-  },
-  "id": "90",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Склад альянса",
-    "en": "Alliance Warehouse"
-  },
-  "id": "95",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Джамп модуль",
-    "en": "Jump Thruster"
-  },
-  "id": "110",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Алтарь",
-    "en": "Altar"
-  },
-  "id": "120",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Научный центр",
-    "en": "Science Center"
-  },
-  "id": "121",
-  "orbita": true
-}, {
-  "name": {
-    "ru": "Колония",
-    "en": "Colony"
-  },
-  "id": "1",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Склад",
-    "en": "Warehouse"
-  },
-  "id": "11",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Города",
-    "en": "Cities"
-  },
-  "id": "12",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Центр здравоохранения",
-    "en": "Health Care Center"
-  },
-  "id": "15",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Банк",
-    "en": "Bank"
-  },
-  "id": "18",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Обсерватория",
-    "en": "Observatory"
-  },
-  "id": "19",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Строительный комбинат",
-    "en": "Construction Plant"
-  },
-  "id": "20",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Космопорт",
-    "en": "Spaceport"
-  },
-  "id": "27",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Конгресс колоний",
-    "en": "Colonies Congress"
-  },
-  "id": "61",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Энергетический купол",
-    "en": "Power Dome"
-  },
-  "id": "66",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Колониальное управление",
-    "en": "Colonial Administration"
-  },
-  "id": "76",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Развлекательный центр",
-    "en": "Entertainment Center"
-  },
-  "id": "77",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Полицейское управление",
-    "en": "Police Department"
-  },
-  "id": "78",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Разведывательное управление",
-    "en": "Intelligence Agency"
-  },
-  "id": "86",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Центр контрразведки",
-    "en": "Counterintelligence Center"
-  },
-  "id": "87",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Культурный центр",
-    "en": "Cultural Center"
-  },
-  "id": "91",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Центр управления",
-    "en": "Control Center"
-  },
-  "id": "92",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Центр безопасности",
-    "en": "Security Center"
-  },
-  "id": "99",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Солнечная электростанция",
-    "en": "Solar Power Plant"
-  },
-  "id": "2",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Тепловая электростанция",
-    "en": "Thermal Power Plant"
-  },
-  "id": "14",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Атомная электростанция",
-    "en": "Nuclear Power Plant"
-  },
-  "id": "21",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Термоядерная электростанция",
-    "en": "Thermonuclear Power Plant"
-  },
-  "id": "28",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Ресурсно-сырьевая база",
-    "en": "Resource Base"
-  },
-  "id": "3",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Горно-обогатительный комбинат",
-    "en": "Mining and Processing Plant"
-  },
-  "id": "4",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Шахты",
-    "en": "Mines"
-  },
-  "id": "5",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Станция геологоразведки",
-    "en": "Exploration Station"
-  },
-  "id": "17",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Металлургический комбинат",
-    "en": "Metallurgical Plant"
-  },
-  "id": "8",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Фабрика строительных материалов",
-    "en": "Construction Materials Factory"
-  },
-  "id": "9",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Технологический центр",
-    "en": "Tech Center"
-  },
-  "id": "10",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Химический завод",
-    "en": "Chemical Plant"
-  },
-  "id": "13",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Топливный завод",
-    "en": "Fuel Plant"
-  },
-  "id": "22",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Фабрика двигателей КК",
-    "en": "Engine Factory (SC)"
-  },
-  "id": "26",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Завод энергетических реакторов",
-    "en": "Power Reactor Plant"
-  },
-  "id": "37",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Индустриальный комплекс",
-    "en": "Industrial Complex"
-  },
-  "id": "59",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Фабрика буровых установок",
-    "en": "Drilling Rig Factory"
-  },
-  "id": "60",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Фабрика утилизации",
-    "en": "Recycling Factory"
-  },
-  "id": "62",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Завод точных приборов",
-    "en": "Precision Instrument Plant"
-  },
-  "id": "70",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Оружейный завод",
-    "en": "Armoury"
-  },
-  "id": "74",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Литейный завод",
-    "en": "Foundry"
-  },
-  "id": "75",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Завод энергетических щитов",
-    "en": "Power Panel Plant"
-  },
-  "id": "81",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Завод ракетных установок",
-    "en": "Missile Plant"
-  },
-  "id": "82",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Фабрика боеприпасов",
-    "en": "Ammo Factory"
-  },
-  "id": "83",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Индустриальный центр Боргов",
-    "en": "Borg Industrial Center"
-  },
-  "id": "93",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Центр стандартизации Боргов",
-    "en": "Borg Standardization Center"
-  },
-  "id": "109",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Научная лаборатория",
-    "en": "Science Laboratory"
-  },
-  "id": "23",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Исследовательский центр",
-    "en": "Research Center"
-  },
-  "id": "24",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Академия наук",
-    "en": "Science Academy"
-  },
-  "id": "25",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Конструкторское бюро",
-    "en": "Design Office"
-  },
-  "id": "32",
-  "orbita": false
-}, {
-  "name": {
-    "ru": "Археологический центр",
-    "en": "Archaeological Center"
-  },
-  "id": "71",
-  "orbita": false
-}];
+sfdata.buildings = [
+  {
+    "name": {
+      "ru": "Орбитальная база",
+      "en": "Orbital Base"
+    },
+    "id": "7",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Жилой модуль",
+      "en": "Residential Module"
+    },
+    "id": "31",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Орбитальный склад",
+      "en": "Orbital Warehouse"
+    },
+    "id": "63",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Гиперврата",
+      "en": "Hypergates"
+    },
+    "id": "68",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Орбитальная обсерватория",
+      "en": "Orbital Observatory"
+    },
+    "id": "69",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Радарная станция",
+      "en": "Radar Station"
+    },
+    "id": "72",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Генератор поля маскировки",
+      "en": "Masking Field Generator"
+    },
+    "id": "73",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Орбитальное казино",
+      "en": "Orbital Casino"
+    },
+    "id": "85",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Школа командиров",
+      "en": "Commander School"
+    },
+    "id": "88",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Служба спасения командиров",
+      "en": "Rescue Service"
+    },
+    "id": "89",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Логистический центр",
+      "en": "Logistics Center"
+    },
+    "id": "97",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Фазовый усилитель",
+      "en": "Phase Amp"
+    },
+    "id": "98",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Детектор аномалий",
+      "en": "Anomaly Detector"
+    },
+    "id": "100",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Орбитальная СЭС",
+      "en": "Orbital PSS"
+    },
+    "id": "30",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Орбитальный термоядерный реактор",
+      "en": "Orbital Thermonuclear Reactor"
+    },
+    "id": "67",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Орбитальный гравитационный реактор",
+      "en": "Orbital Gravity Reactor"
+    },
+    "id": "107",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Боевая платформа",
+      "en": "Combat Platform"
+    },
+    "id": "84",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Дефлекторная станция",
+      "en": "Deflector Station"
+    },
+    "id": "103",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Центр обороны",
+      "en": "Defense Center"
+    },
+    "id": "104",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Лазерная боевая платформа",
+      "en": "Laser Combat Platform"
+    },
+    "id": "112",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Орудийная боевая платформа",
+      "en": "Gun Combat Platform"
+    },
+    "id": "113",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Ракетная боевая платформа",
+      "en": "Missile Combat Platform"
+    },
+    "id": "114",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Тяжелая боевая платформа",
+      "en": "Heavy Combat Platform"
+    },
+    "id": "115",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Орбитальный ангар",
+      "en": "Orbital Hangar"
+    },
+    "id": "55",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Орбитальный док",
+      "en": "Orbital Dock"
+    },
+    "id": "56",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Командный центр",
+      "en": "Command Center"
+    },
+    "id": "58",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Ремонтные мастерские",
+      "en": "Repair Shops"
+    },
+    "id": "80",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Торговый центр",
+      "en": "Trade Center"
+    },
+    "id": "64",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Торговый склад",
+      "en": "Trade Warehouse"
+    },
+    "id": "65",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Навигационный центр",
+      "en": "Navigation Center"
+    },
+    "id": "96",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Обогатитель изотопов гелия",
+      "en": "Helium Isotope Enricher"
+    },
+    "id": "29",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Экстрактор темной материи",
+      "en": "Dark Matter Extractor"
+    },
+    "id": "105",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Аванпост",
+      "en": "Outpost"
+    },
+    "id": "118",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Цитадель",
+      "en": "Citadel"
+    },
+    "id": "119",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Космический причал",
+      "en": "Space Pier"
+    },
+    "id": "108",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Торговая станция",
+      "en": "Trade Station"
+    },
+    "id": "102",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Преобразователь материи",
+      "en": "Matter Converter"
+    },
+    "id": "101",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Гравитационный накопитель",
+      "en": "Gravity Accumulator"
+    },
+    "id": "106",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Центр переработки",
+      "en": "Processing Center"
+    },
+    "id": "116",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Космобаза",
+      "en": "Spacebase"
+    },
+    "id": "90",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Склад альянса",
+      "en": "Alliance Warehouse"
+    },
+    "id": "95",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Джамп модуль",
+      "en": "Jump Thruster"
+    },
+    "id": "110",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Алтарь",
+      "en": "Altar"
+    },
+    "id": "120",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Научный центр",
+      "en": "Science Center"
+    },
+    "id": "121",
+    "orbita": true
+  },
+  {
+    "name": {
+      "ru": "Колония",
+      "en": "Colony"
+    },
+    "id": "1",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Склад",
+      "en": "Warehouse"
+    },
+    "id": "11",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Города",
+      "en": "Cities"
+    },
+    "id": "12",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Центр здравоохранения",
+      "en": "Health Care Center"
+    },
+    "id": "15",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Банк",
+      "en": "Bank"
+    },
+    "id": "18",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Обсерватория",
+      "en": "Observatory"
+    },
+    "id": "19",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Строительный комбинат",
+      "en": "Construction Plant"
+    },
+    "id": "20",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Космопорт",
+      "en": "Spaceport"
+    },
+    "id": "27",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Конгресс колоний",
+      "en": "Colonies Congress"
+    },
+    "id": "61",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Энергетический купол",
+      "en": "Power Dome"
+    },
+    "id": "66",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Колониальное управление",
+      "en": "Colonial Administration"
+    },
+    "id": "76",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Развлекательный центр",
+      "en": "Entertainment Center"
+    },
+    "id": "77",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Полицейское управление",
+      "en": "Police Department"
+    },
+    "id": "78",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Разведывательное управление",
+      "en": "Intelligence Agency"
+    },
+    "id": "86",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Центр контрразведки",
+      "en": "Counterintelligence Center"
+    },
+    "id": "87",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Культурный центр",
+      "en": "Cultural Center"
+    },
+    "id": "91",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Центр управления",
+      "en": "Control Center"
+    },
+    "id": "92",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Центр безопасности",
+      "en": "Security Center"
+    },
+    "id": "99",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Солнечная электростанция",
+      "en": "Solar Power Plant"
+    },
+    "id": "2",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Тепловая электростанция",
+      "en": "Thermal Power Plant"
+    },
+    "id": "14",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Атомная электростанция",
+      "en": "Nuclear Power Plant"
+    },
+    "id": "21",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Термоядерная электростанция",
+      "en": "Thermonuclear Power Plant"
+    },
+    "id": "28",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Ресурсно-сырьевая база",
+      "en": "Resource Base"
+    },
+    "id": "3",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Горно-обогатительный комбинат",
+      "en": "Mining and Processing Plant"
+    },
+    "id": "4",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Шахты",
+      "en": "Mines"
+    },
+    "id": "5",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Станция геологоразведки",
+      "en": "Exploration Station"
+    },
+    "id": "17",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Металлургический комбинат",
+      "en": "Metallurgical Plant"
+    },
+    "id": "8",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Фабрика строительных материалов",
+      "en": "Construction Materials Factory"
+    },
+    "id": "9",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Технологический центр",
+      "en": "Tech Center"
+    },
+    "id": "10",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Химический завод",
+      "en": "Chemical Plant"
+    },
+    "id": "13",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Топливный завод",
+      "en": "Fuel Plant"
+    },
+    "id": "22",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Фабрика двигателей КК",
+      "en": "Engine Factory (SC)"
+    },
+    "id": "26",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Завод энергетических реакторов",
+      "en": "Power Reactor Plant"
+    },
+    "id": "37",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Индустриальный комплекс",
+      "en": "Industrial Complex"
+    },
+    "id": "59",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Фабрика буровых установок",
+      "en": "Drilling Rig Factory"
+    },
+    "id": "60",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Фабрика утилизации",
+      "en": "Recycling Factory"
+    },
+    "id": "62",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Завод точных приборов",
+      "en": "Precision Instrument Plant"
+    },
+    "id": "70",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Оружейный завод",
+      "en": "Armoury"
+    },
+    "id": "74",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Литейный завод",
+      "en": "Foundry"
+    },
+    "id": "75",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Завод энергетических щитов",
+      "en": "Power Panel Plant"
+    },
+    "id": "81",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Завод ракетных установок",
+      "en": "Missile Plant"
+    },
+    "id": "82",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Фабрика боеприпасов",
+      "en": "Ammo Factory"
+    },
+    "id": "83",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Индустриальный центр Боргов",
+      "en": "Borg Industrial Center"
+    },
+    "id": "93",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Центр стандартизации Боргов",
+      "en": "Borg Standardization Center"
+    },
+    "id": "109",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Научная лаборатория",
+      "en": "Science Laboratory"
+    },
+    "id": "23",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Исследовательский центр",
+      "en": "Research Center"
+    },
+    "id": "24",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Академия наук",
+      "en": "Science Academy"
+    },
+    "id": "25",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Конструкторское бюро",
+      "en": "Design Office"
+    },
+    "id": "32",
+    "orbita": false
+  },
+  {
+    "name": {
+      "ru": "Археологический центр",
+      "en": "Archaeological Center"
+    },
+    "id": "71",
+    "orbita": false
+  }
+];
+sfdata.buildsOrderedIds = [
+  66, 1, 11, 76, 61, 63, 91, 92, 99, 20, 15, 12, 18, 77, 78, 86, 87, 69, 27, 2, 14, 21, 28, 17, 3, 4, 5, 8, 9, 10, 13, 22, 23, 24, 25, 32, 71, 93, 109, 62, 26, 37, 59, 60, 70, 74, 75, 81, 82, 83, 7, 90, 95, 120, 121, 110, 63, 68, 69, 72, 73, 98, 100, 31, 97, 85, 88, 89, 30, 67, 107, 118, 119, 103, 104, 84, 112, 113, 114, 115, 108, 55, 56, 80, 58, 101, 106, 116, 29, 105, 102, 96, 64, 65
+];
 // Корпуса кораблей
 sfdata.hulls = [
   {

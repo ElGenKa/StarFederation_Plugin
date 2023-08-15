@@ -16,7 +16,7 @@ $(document).ready(function () {
         setTimeout(() => {
             sfui.pushPlugin({
                 code: 'example_f_script_1',
-                sort: 'planet',
+                group: 'planet',
                 type: 'bool',
                 title: 'Добавить в заголовок окна планеты её ID',
                 wndCondition: 'WndPlanet',
@@ -33,7 +33,7 @@ $(document).ready(function () {
         setTimeout(() => {
             sfui.pushPlugin({
                 code: 'example_f_script_2',
-                sort: 'planet',
+                group: 'planet',
                 type: 'bool',
                 title: 'В орбитальном доке убрать картинки кораблей',
                 wndCondition: 'WndPlanet',

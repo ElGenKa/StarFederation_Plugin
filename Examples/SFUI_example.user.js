@@ -20,7 +20,7 @@ $(document).ready(function () {
         setTimeout(() => {
             sfui.pushPlugin({
                 code: 'example_script_1', // Уникальный код скрипта, эдакое системное название
-                sort: 'another', // Категория скрипта
+                group: 'another', // Категория скрипта
                 type: 'bool', // Тип настройки текст (string) или переключатель (bool)
                 title: 'Пример 1', // Заголовок настройки
                 wndCondition: 'WndPlanet', // При открытии какого окна выполнится callback
@@ -45,7 +45,7 @@ $(document).ready(function () {
             // В консоли будет выведено "Я запустился"
             sfui.pushPlugin({
                 code: 'example_script_2',
-                sort: 'another',
+                group: 'another',
                 type: 'bool',
                 title: 'Пример 2',
                 wndCondition: 'OnLoadScript',
@@ -63,7 +63,7 @@ $(document).ready(function () {
             //А эта настройка уже доступна в окне настроек скрипта (стартовое окно)
             sfui.pushPlugin({
                 code: 'example_script_3',
-                sort: 'another',
+                group: 'another',
                 type: 'string',
                 title: 'Пример 3 (настройка)',
                 wndCondition: 'SettingsOnly',

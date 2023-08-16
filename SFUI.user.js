@@ -1975,106 +1975,116 @@ sfui.updateTradeRow = function () {
 // Подсчет продажи кредитов
 sfui.updateSellCredits = function () {
   try {
-    let baseSelOneCredit = 0.0000001;
-    if ($('input[name="fedsellall[0-20-0-0]"]').length > 0) {
-      let sellAmmount = sfapi.parseIntExt($(`#WndTrade_federation-sellresourses span:contains("${sfui_language.CAN_BE_SOLD}")`).next().text());
-      if (sellAmmount > 0)
-        $('input[name="fedsellall[0-20-0-0]"]').val(sellAmmount / baseSelOneCredit);
-    }
+    if ($('input[name="fedsellall[0-20-0-0]"]').length < 1)
+      return;
+
+    const amountData = $(`#WndTrade_federation-sellresourses span:contains("${sfui_language.CAN_BE_SOLD}")`).next().text();
+    const availSellAmmount = sfapi.parseIntExt(amountData);
+    const baseSelOneCredit = 0.0000001;
+    if (sellAmmount > 0)
+      $('input[name="fedsellall[0-20-0-0]"]').val(availSellAmmount / baseSelOneCredit);
   } catch (e) {
     console.error(e);
   }
 }
 
 // Устанавливаем маскимальные уровни исследований
-sfui.WndScienceSetMaxTech = function () {
+sfui.wndScienceSetMaxTech = function () {
   $(getWindow('WndScience').win).find('.hintcontent').each((i, element) => {
-    let containsMaxLvl = $(element).find(`td:contains('${sfui_language.MAX_LVL_TECH}')`);
-    if (containsMaxLvl.length > 0) {
-      let newMaxLvl = containsMaxLvl[0].nextElementSibling.innerText;
-      newMaxLvl = sfapi.parseIntExt(newMaxLvl);
-      if (newMaxLvl)
-        element.previousSibling.value = newMaxLvl;
-    }
+    const containsMaxLvl = $(element).find(`td:contains('${sfui_language.MAX_LVL_TECH}')`);
+    if (containsMaxLvl.length < 1)
+      return;
+
+    const newMaxLvl = containsMaxLvl[0].nextElementSibling.innerText;
+    newMaxLvl = sfapi.parseIntExt(newMaxLvl);
+    if (newMaxLvl)
+      element.previousSibling.value = newMaxLvl;
   });
 }
 
 //Открытие окна просмотра планет, добавляем команды для флотов
-sfui.WndSelectPlanet = function () {
-  let title = $(getWindow('WndSelect').win).find(".dhtmlx_wins_title")[0].innerText;
-  if (title === sfui_language.SELECT_COLONY) {
-    let rows = $("[id^='WndSelect_playerplanets_row']");
-    for (let i = 0; i < rows.length; i++) {
-      let row = rows[i];
-      let id = row.cells[1].innerText.replace(/\u00a0/g, "");
-      let id_int = parseInt($(row.cells[1])[0].children[0].firstChild.onclick.toString().split("planetid=")[1].split("')")[0]);
-      let commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_FLY}" onclick="fleet_external_comand(2,'${id}');" style="background:url(/images/icons/i_fleet_fly_12.png);cursor:pointer; width: 12px; height: 12px;background-size: contain;"></div></td>`);
-      row.append(commFly[0]);
-      commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_JUMP}" onclick="fleet_external_comand(19,'${id}');" style="background:url(/images/icons/i_cmd_jump_12.png);cursor:pointer;height:12px;width:12px;background-size: contain;"></div></td>`);
-      row.append(commFly[0]);
-      commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_UNLOAD_ALL}" onclick="fleet_external_comand(16,'${id}');" style="background:url(/images/icons/i-unloadall-16.png);cursor:pointer;height:12px;width:12px;background-size: contain;"></div></td>`);
-      row.append(commFly[0]);
-      commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_UNLOAD_ALL_NO_FUEL}" onclick="fleet_external_comand(17,'${id}');" style="background:url(/images/icons/i-unloadallnofuel-16.png);cursor:pointer;height:12px;width:12px;background-size: contain;"></div></td>`);
-      row.append(commFly[0]);
-      commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_FLY_UNLOAD}" onclick="fleet_external_comand(18,'${id}');" style="background:url(/images/icons/i-unload-16.png);cursor:pointer;height:12px;width:12px;background-size: contain;"></div></td>`);
-      row.append(commFly[0]);
-      commFly = $(`<span data-hint="${sfui_language.INFO_SUMMARY}" onclick="sound_click(2);{{getWindow('WndPlanet').view_report(${id_int});}};return cancelEvent(event);" style="cursor:pointer;height:12px;width:12px;"><img style='width: 12px;' src='/images/icons/flat/i-info-16.png'></span>`);
-      row.cells[1].children[0].append(commFly[0]);
-    }
+sfui.wndSelectPlanet = function () {
+  const title = $(getWindow('WndSelect').win).find(".dhtmlx_wins_title")[0].innerText;
+  if (title !== sfui_language.SELECT_COLONY)
+    return;
+
+  const rows_jq = $("[id^='WndSelect_playerplanets_row']");
+  for (let i = 0; i < rows_jq.length; i++) {
+    const row = rows_jq[i];
+    const id = row.cells[1].innerText.replace(/\u00a0/g, "");
+    const id_int = parseInt(row.cells.eq(1)[0].children[0].firstChild.onclick.toString().split("planetid=")[1].split("')")[0]);
+    const commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_FLY}" onclick="fleet_external_comand(2,'${id}');" style="background:url(/images/icons/i_fleet_fly_12.png);cursor:pointer; width: 12px; height: 12px;background-size: contain;"></div></td>`);
+    row.append(commFly[0]);
+    commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_JUMP}" onclick="fleet_external_comand(19,'${id}');" style="background:url(/images/icons/i_cmd_jump_12.png);cursor:pointer;height:12px;width:12px;background-size: contain;"></div></td>`);
+    row.append(commFly[0]);
+    commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_UNLOAD_ALL}" onclick="fleet_external_comand(16,'${id}');" style="background:url(/images/icons/i-unloadall-16.png);cursor:pointer;height:12px;width:12px;background-size: contain;"></div></td>`);
+    row.append(commFly[0]);
+    commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_UNLOAD_ALL_NO_FUEL}" onclick="fleet_external_comand(17,'${id}');" style="background:url(/images/icons/i-unloadallnofuel-16.png);cursor:pointer;height:12px;width:12px;background-size: contain;"></div></td>`);
+    row.append(commFly[0]);
+    commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_FLY_UNLOAD}" onclick="fleet_external_comand(18,'${id}');" style="background:url(/images/icons/i-unload-16.png);cursor:pointer;height:12px;width:12px;background-size: contain;"></div></td>`);
+    row.append(commFly[0]);
+    commFly = $(`<span data-hint="${sfui_language.INFO_SUMMARY}" onclick="sound_click(2);{{getWindow('WndPlanet').view_report(${id_int});}};return cancelEvent(event);" style="cursor:pointer;height:12px;width:12px;"><img style='width: 12px;' src='/images/icons/flat/i-info-16.png'></span>`);
+    row.cells[1].children[0].append(commFly[0]);
   }
 }
 
 //Добавление кнопки выгрузки в окно управления флотом
 sfui.unloadAllNoFuelFleet = function () {
-  if (getWindow("WndFleet").activetab === 'main-comands') {
-    //Если окно "Управление полетом"
-    if ($(getWindow("WndFleet").win).find('#dropAllExtOnFleets').length === 0) {
-      //Проверяем, нет ли этой кнопки (иногда окно обновляется без полной перезаписи содержимого)
-      $($(getWindow("WndFleet").win).find('.controls-center-row')[1]).append(`
-                <button class="image_btn noselect" id="dropAllExtOnFleets" onclick="sfcommands.dropAllExtOnFleets()" style="cursor:pointer;margin-left:5px; padding: 2px;">
-                <img data-hint="${sfui_language.UNLOAD_ALL}" src="/images/icons/i-unloadall-16.png" style="height:12px;width:12px;">
-                </span>`);
-      $($(getWindow("WndFleet").win).find('.controls-center-row')[1]).append(`
-                <button class="image_btn noselect" id="dropAllNoFuelExt" onclick="sfcommands.dropAllNoFuelExt()" style="cursor:pointer;margin-left:5px; padding: 2px;">
-                <img data-hint="${sfui_language.UNLOAD_NO_FUETL}" src="/images/icons/i-unloadallnofuel-16.png" style="height:12px;width:12px;">
-                </span>`);
-      $($(getWindow("WndFleet").win).find('.controls-center-row')[1]).append(`
-                <button class="image_btn noselect" id="dropExt" onclick="sfcommands.dropExt()" style="cursor:pointer;margin-left:5px; padding: 2px;">
-                <img data-hint="${sfui_language.UNLOAD}" src="/images/icons/i-unload-16.png" style="height:12px;width:12px;">
-                </span>`);
-      // Добавляем кнопку
-    }
-  }
+  const window = getWindow("WndFleet");
+  if (window.activetab !== 'main-comands')
+    return;
+  //Проверяем, нет ли этой кнопки (иногда окно обновляется без полной перезаписи содержимого)
+  if ($(window.win).find('#dropAllExtOnFleets').length !== 0)
+    return;
+
+  const controlsPanel = $(window.win).find('.controls-center-row').eq(1);
+  controlsPanel.append(`
+    <button class="image_btn noselect" id="dropAllExtOnFleets" onclick="sfcommands.dropAllExtOnFleets()" style="cursor:pointer;margin-left:5px; padding: 2px;">
+    <img data-hint="${sfui_language.UNLOAD_ALL}" src="/images/icons/i-unloadall-16.png" style="height:12px;width:12px;">
+    </span>`);
+  controlsPanel.append(`
+    <button class="image_btn noselect" id="dropAllNoFuelExt" onclick="sfcommands.dropAllNoFuelExt()" style="cursor:pointer;margin-left:5px; padding: 2px;">
+    <img data-hint="${sfui_language.UNLOAD_NO_FUETL}" src="/images/icons/i-unloadallnofuel-16.png" style="height:12px;width:12px;">
+    </span>`);
+  controlsPanel.append(`
+    <button class="image_btn noselect" id="dropExt" onclick="sfcommands.dropExt()" style="cursor:pointer;margin-left:5px; padding: 2px;">
+    <img data-hint="${sfui_language.UNLOAD}" src="/images/icons/i-unload-16.png" style="height:12px;width:12px;">
+    </span>`);
 }
 
 //Устанавливаем максимальные уровни для построек
 sfui.setMaxLevelsBuilds = function () {
-  let isBuildOpen = $($(getWindow("WndPlanet").win).find("div[tab_id='main-buildings']")[0]).hasClass('dhx_tab_element_active');
-  if (isBuildOpen) {
-    $(".hintcontent[id^='WndPlanet_buh_']").each(function (i, e) {
-      let fe = $(e).find(`span:contains('${sfui_language.MAX_LVL}')`);
-      if (fe.length > 0) {
-        if (fe[0].nextElementSibling) {
-          let maxLevel = fe[0].nextElementSibling.innerText;
-          if (maxLevel)
-            $(e).parent()[0].previousElementSibling.children[0].value = maxLevel.replaceAll(" ", '');
-        }
-      }
-    });
-  }
+  const isBuildOpen = $(getWindow("WndPlanet").win).find("div[tab_id='main-buildings']").eq(0).hasClass('dhx_tab_element_active');
+  if (!isBuildOpen)
+    return;
+
+  $(".hintcontent[id^='WndPlanet_buh_']").each(function (i, e) {
+    const fe = $(e).find(`span:contains('${sfui_language.MAX_LVL}')`);
+    if (fe.length < 1 || !fe[0].nextElementSibling)
+      return;
+
+    const maxLevel = fe[0].nextElementSibling.innerText;
+    if (maxLevel)
+      $(e).parent()[0].previousElementSibling.children[0].value = maxLevel.replaceAll(' ', '');
+  });
 }
 
 //Добавляем в хинт инфу, на сколько хватит построек
 sfui.addMaxBuildsCount = function () {
-  Array.from($(getWindow("WndPlanet").win).find(`button:contains('${sfui_language.BUILD}')`)).forEach((element) => {
-    if (element.nextElementSibling.children[0].innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) + 1 || element.nextElementSibling.children[0].innerText.indexOf(sfui_language.ORBITAL_PLATFORMS) + 1) {
-      let row = element.nextElementSibling.children[0].children[0].rows[0];
-      let cellUse = sfapi.parseIntExt(row.cells[2].innerText);
-      let cellFree = sfapi.parseIntExt(row.cells[3].innerText);
-      let cellsGo = Math.floor(cellFree / cellUse);
+  const window_jq = $(getWindow("WndPlanet").win);
+  Array.from(window_jq.find(`button:contains('${sfui_language.BUILD}')`))
+    .forEach((element) => {
+      const node = element.nextElementSibling.children[0];
+      if (node.innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) === -1
+        && node.innerText.indexOf(sfui_language.ORBITAL_PLATFORMS) === -1)
+        return;
+
+      const row = node.children[0].rows[0];
+      const cellUse = sfapi.parseIntExt(row.cells[2].innerText);
+      const cellFree = sfapi.parseIntExt(row.cells[3].innerText);
+      const cellsGo = Math.floor(cellFree / cellUse);
       row.cells[2].innerText = cellUse + " (" + cellsGo + ")";
-    }
-  });
+    });
 }
 
 //Добавляем в хинт инфу, на сколько хватит кораблей
@@ -3420,7 +3430,7 @@ sfui.plugins.push({
   type: 'bool',
   title: sfui_language.EXT_BTNS_ON_FLEET,
   wndCondition: 'WndSelect',
-  callback: sfui.WndSelectPlanet,
+  callback: sfui.wndSelectPlanet,
   callbackCondition: () => {
     return 1;
   },
@@ -3795,7 +3805,7 @@ sfui.plugins.push({
   type: 'bool',
   title: sfui_language.SET_MAX_TECH,
   wndCondition: 'WndScience',
-  callback: sfui.WndScienceSetMaxTech,
+  callback: sfui.wndScienceSetMaxTech,
   callbackCondition: () => {
     return 1;
   },

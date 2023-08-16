@@ -3811,7 +3811,7 @@ sfui.plugins.push({
   wndCondition: 'WndScience',
   callback: () => {
     const parentElement_jq = $('#WndScience_science_seq_form > div > .data_table.p0 > tbody');
-    if (parentElement_jq[0].dataset.sorted)
+    if (!parentElement_jq.length || parentElement_jq[0].dataset.sorted)
       return;
 
     const rows_jq = parentElement_jq.children('tr.h24:not(:has(> td[colspan]))');

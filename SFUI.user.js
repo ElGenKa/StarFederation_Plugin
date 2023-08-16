@@ -1779,7 +1779,7 @@ function sfui_drawFleetIDInWindow(wnd) {
 
 function sfui_redrawNewMesagesWindow() {
   $('#divNewMessages').css('max-height', '');
-  $("#WndMessages_hint_messages_form").parent().css('max-height', '')
+  $("#WndMessages_hint_messages_form").parent().css('max-height', '');
 }
 
 function sfui_mobileOptimization() {
@@ -1855,7 +1855,7 @@ sfui.calcTradeCount = function () {
     let tradePrice = sfapi.parseIntExt($($(e).find('td')[7]).text());
     let tradeAmount = sfapi.parseIntExt($($(e).find('td')[6]).text());
     let tradeMinAmount = sfapi.parseIntExt($($(e).find('td')[5]).text());
-    totalPrice += tradePrice * (tradeAmount / tradeMinAmount)
+    totalPrice += tradePrice * (tradeAmount / tradeMinAmount);
   });
   $("#WndTrade_main-rates .controlbox").append(`<span id='tradesCounterLabel' class="value_label m2">${sfui_language.PRICE_RATES}</span>`);
   $("#WndTrade_main-rates .controlbox").append(`<div data-hint="${sfui_language.PRICE_RATES_ALL}" id="tradesCounterData" class="value-n text10 h18 m2" style='padding-left: 5px; padding-right: 5px;'> <span class="v-currency">${sfapi.tls(totalPrice)}</span>  <span style="color:#daa548; margin-left: 5px;"> IG</span> </div>`);
@@ -1966,7 +1966,7 @@ sfui.updateTradeRow = function () {
       .find('button.image_btn.noselect')
       .css('height', '14px')
       .find('img')
-      .css('height', '14px')
+      .css('height', '14px');
   } catch (e) {
     console.error(e);
   }
@@ -1996,7 +1996,7 @@ sfui.WndScienceSetMaxTech = function () {
       if (newMaxLvl)
         element.previousSibling.value = newMaxLvl;
     }
-  })
+  });
 }
 
 //Открытие окна просмотра планет, добавляем команды для флотов

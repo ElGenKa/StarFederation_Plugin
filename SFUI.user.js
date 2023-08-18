@@ -782,7 +782,7 @@ sfapi.parseIntExt = (valueStr) => {
   value = value[0];
 
   if (isTrlnFound)
-    return Math.trunc(parseFloat(value) * sfui_language.TRLN);
+    return Math.trunc(parseFloat(value) * TRLN);
 
   return parseInt(value);
 }
@@ -796,7 +796,7 @@ sfapi.parseFloatExt = (valueStr) => {
   const isTrlnFound = value.length > 1;
   value = parseFloat(value[0]);
 
-  return isTrlnFound ? value * sfui_language.TRLN : value;
+  return isTrlnFound ? value * TRLN : value;
 }
 // Convert normal value to in-game format (converts to TRLN format is necessary)
 sfapi.toGameValueStr = (value) => {
@@ -2139,6 +2139,7 @@ sfui.setMaxLevelsBuilds = function () {
 //Добавляем в хинт инфу, на сколько хватит построек
 sfui.addMaxBuildsCount = function () {
   const window_jq = $(getWindow("WndPlanet").win);
+  let minBuilds = Number.MAX_SAFE_INTEGER;
   Array.from(window_jq.find(`button:contains('${sfui_language.BUILD}')`))
     .forEach((element) => {
       const node = element.nextElementSibling.children[0];
@@ -2150,7 +2151,32 @@ sfui.addMaxBuildsCount = function () {
       const cellUse = sfapi.parseIntExt(row.cells[2].innerText);
       const cellFree = sfapi.parseIntExt(row.cells[3].innerText);
       const cellsGo = Math.floor(cellFree / cellUse);
+      let elementForMaxBuilds = null;
       row.cells[2].innerText = cellUse + " (" + cellsGo + ")";
+
+      Array.from($($(element.nextElementSibling).find('tr'))).forEach((e, i) => {
+        if (i === 0) {
+          elementForMaxBuilds = $(e);
+          return;
+        }
+        try {
+          let tdr = $(e).find('td');
+          let name = tdr[1].innerText;
+          let need = tdr[2];
+          let amount = tdr[3];
+          console.log(i, sfapi.parseIntExt(amount.innerText), sfapi.parseIntExt(need.innerText))
+          let minTdr = Math.floor(sfapi.parseIntExt(amount.innerText) / sfapi.parseIntExt(need.innerText));
+          if (name !== sfui_language.POPULATION) {
+            if (minTdr < minBuilds)
+              minBuilds = minTdr;
+          }
+
+          $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.AMMOUNT_BUILD_SHIPS}'><span>${sfapi.tls(minTdr)}</span></td>`)
+        } catch (e) {
+
+        }
+      })
+
     });
 }
 

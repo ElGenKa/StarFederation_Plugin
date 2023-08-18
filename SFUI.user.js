@@ -1158,7 +1158,7 @@ sfui.pluginDataCheck = (plugin) => {
 
   if (Array.isArray(plugin.wndCondition)) {
     if (plugin.wndCondition.length < 1) {
-      sfui.pluginPushError("wndCondition is array and wndCondition.length < 1", plugin);
+      sfui.pluginPushError("wndCondition is array but wndCondition.length < 1", plugin);
       return false;
     }
     for (const X of plugin.wndCondition) {

@@ -1342,6 +1342,7 @@ function sfui_initDocumentScript() {
   document.sfui_isMobile = sfui_isMobile;
   document.sfui_language = sfui_language;
   document.sfui_formatTimeFromHours = sfui_formatTimeFromHours;
+  document.TRLN = TRLN;
 }
 
 function sfui_initWindowScript() {
@@ -1362,6 +1363,7 @@ function sfui_initWindowScript() {
   window.sfui_isMobile = document.sfui_isMobile;
   window.sfui_language = document.sfui_language;
   window.sfui_formatTimeFromHours = document.sfui_formatTimeFromHours;
+  window.TRLN = document.TRLN;
   `;
   document.body.append(newScript);
 }

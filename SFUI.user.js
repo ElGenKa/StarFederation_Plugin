@@ -886,7 +886,7 @@ sfapi.rgb2hex = (rgb) => {
   if (green.length === 1) green = "0" + green;
   if (blue.length === 1) blue = "0" + blue;
   return "#" + red + g + b;
-};
+}
 
 //Функция создания задержек в асинхронных функциях
 sfapi.timeout = (ms) => {
@@ -895,6 +895,7 @@ sfapi.timeout = (ms) => {
 const timeout = sfapi.timeout;
 
 sfui.plugins = [];
+sfui.wndBinds = { OnLoadScript: [], AllCalls: [] };
 sfui.settings = {};
 
 // Для изменения настроек "на ходу" через консоль
@@ -949,14 +950,14 @@ function sfui_Init() {
   }
 
   userScripts.install({ 'wnd_end_load': sfui.endPoint });
-  sfui.plugins.forEach(plugin => { // исполняем модули которые должны быть выполнены при запуске
+  sfui.wndBinds.OnLoadScript.forEach(plugin => {
     try {
-      if (plugin.wndCondition === 'OnLoadScript' && plugin.callbackCondition())
+      if (plugin.callbackCondition?.() ?? true)
         plugin.callback();
     } catch (e) {
       console.error(e);
     }
-  })
+  });
 }
 
 // Акивация всех функций скрипта
@@ -980,8 +981,8 @@ sfui.random = (min, max) => {
 
 // Функция отображения подсказки по функции
 sfui.showHelpWindow = (code) => {
-  let plugin = sfui.plugins.filter(elementPlugin => elementPlugin.code === code)[0];
-  let html = `
+  const plugin = sfui.plugins.find(elementPlugin => elementPlugin.code === code);
+  const html = `
   <div class="textbox-d h-100 w-100" style="overflow-y: auto;">
     <div class="controlbox-d center">
       <a href="${plugin.help.img}" target="_blank" style="display: contents;">
@@ -1122,21 +1123,41 @@ sfui.checkboxCustomAction = function (owner) {
   }
 }
 
-// Добавление модуля в скрипт (извне)
+// Добавление модуля в скрипт
 sfui.pushPlugin = (plugin) => {
-  if (typeof plugin.code !== 'string')
-    return 0;
-  if (plugin.type !== 'bool' && plugin.type !== 'string')
-    return 0;
-  if (typeof plugin.wndCondition !== 'string')
-    return 0;
-  if (typeof plugin.callback !== 'function')
-    return 0;
-  if (typeof plugin.callbackCondition !== 'function')
-    return 0;
+  if (typeof plugin.code !== 'string'
+    || (plugin.type !== 'bool' && plugin.type !== 'string')
+    || typeof plugin.callback !== 'function')
+    return false;
+
+  if (Array.isArray(plugin.wndCondition)) {
+    if (plugin.wndCondition.length < 1)
+      return false;
+    for (const X of plugin.wndCondition)
+      if (typeof X !== 'string')
+        return false;
+  }
+  else if (typeof plugin.wndCondition !== 'string')
+    return false;
+
+  const allWndConds = Array.isArray(plugin.wndCondition) ? plugin.wndCondition : [plugin.wndCondition];
+  for (const wndCond of allWndConds) {
+    if (!Object.hasOwn(sfui.wndBinds, wndCond))
+      sfui.wndBinds[wndCond] = [];
+    //  Регистрируем плагин как обработчик окна
+    sfui.wndBinds[wndCond].push(plugin);
+  }
 
   sfui.plugins.push(plugin);
-  return 1;
+  return true;
+}
+sfui.pushPlugins = (plugins) => {
+  if (!Array.isArray(plugins))
+    return 0;
+  let success = 0;
+  for (const plugin of plugins)
+    success += sfui.pushPlugin(plugin) ? 1 : 0;
+  return success;
 }
 
 // Добавление настроек (из вне)
@@ -1815,24 +1836,22 @@ sfui.endPoint = function (wnd) {
     // Отрисовка номеров полетных листов в окне выбора полетного листа
     sfui_drawFlyListIDInWindow(wnd);
 
-    // Здесь выполняются все модули скрипта
-    // Логика в чем: в точку входа в скрипт передается окно
-    // Мы перебираем в цикле все модули, если по параметрам модуля
-    // он может выполнитя (условия выполнения) то выполняем соответствующий коллбэк
-    // Выполнение коллбэка обернуто в try catch для отлова ошибок
-    // и если один из модулей выдаст ошибку - скрипт не прервет свое выполнение
-    // и другие модули смогут выполнится
-    sfui.plugins.forEach(plugin => {
+    const execPlugin = (plugin) => {
+      // Выполнение коллбэка обернуто в try catch для отлова ошибок,
+      // если один из модулей выдаст ошибку - скрипт не прервет свое выполнение
       try {
-        if (plugin.wndCondition !== wnd.win.idd && plugin.wndCondition !== 'AllCalls')
+        if (plugin.isDisabled || !sfui.settings[plugin.code])
           return;
-
-        if (plugin.callbackCondition() && sfui.settings[plugin.code] && !plugin.isDisabled)
+        if (plugin.callbackCondition?.() ?? true)
           plugin.callback(wnd);
       } catch (e) {
         console.error(e);
       }
-    });
+    }
+
+    // Здесь выполняются все модули скрипта
+    sfui.wndBinds[wnd.win.idd]?.forEach(execPlugin);
+    sfui.wndBinds.AllCalls.forEach(execPlugin);
 
     // Выводим номер флота в окне флота
     sfui_drawFleetIDInWindow(wnd);
@@ -1995,8 +2014,7 @@ sfui.wndScienceSetMaxTech = function () {
     if (containsMaxLvl.length < 1)
       return;
 
-    const newMaxLvl = containsMaxLvl[0].nextElementSibling.innerText;
-    newMaxLvl = sfapi.parseIntExt(newMaxLvl);
+    const newMaxLvl = sfapi.parseIntExt(containsMaxLvl[0].nextElementSibling.innerText);
     if (newMaxLvl)
       element.previousSibling.value = newMaxLvl;
   });
@@ -3215,1175 +3233,1098 @@ sfui.CreateWindow = function (id, w, h, title, icon, html, resizabel, dragabel) 
   return sfui.winsList.length - 1;
 };
 
-sfui.plugins.push({
-  group: pluginsGroups.planet.id,
-  code: 'showMaxBuilds',
-  type: 'bool',
-  title: sfui_language.MANY_BUILDINGS,
-  wndCondition: 'WndPlanet',
-  callback: sfui.addMaxBuildsCount,
-  callbackCondition: () => {
-    return 1;
+sfui.pushPlugins([
+  {
+    group: pluginsGroups.planet.id,
+    code: 'showMaxBuilds',
+    type: 'bool',
+    title: sfui_language.MANY_BUILDINGS,
+    wndCondition: 'WndPlanet',
+    callback: sfui.addMaxBuildsCount,
+    help: {
+      img: 'https://i.postimg.cc/NfGs14kb/Screenshot-21.jpg',
+      text: 'В подсказке при постройке будет в скобках написано, сколько зданий взелет.'
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/NfGs14kb/Screenshot-21.jpg',
-    text: 'В подсказке при постройке будет в скобках написано, сколько зданий взелет.'
-  }
-}, {
-  group: pluginsGroups.planet.id,
-  code: 'showMaxShipBuild',
-  type: 'bool',
-  title: sfui_language.MANY_SHIPS,
-  wndCondition: 'WndPlanet',
-  callback: sfui.addMaxShipsCount,
-  callbackCondition: () => {
-    return (getWindow('WndPlanet').activetab === 'main-orbitaldock');
+  {
+    group: pluginsGroups.planet.id,
+    code: 'showMaxShipBuild',
+    type: 'bool',
+    title: sfui_language.MANY_SHIPS,
+    wndCondition: 'WndPlanet',
+    callback: sfui.addMaxShipsCount,
+    callbackCondition: () => {
+      return (getWindow('WndPlanet').activetab === 'main-orbitaldock');
+    },
+    help: {
+      img: 'https://i.postimg.cc/52VvdH27/image.png',
+      text: 'Подсчет кол-ва кораблей для строительства.<br>Там где время - минимальновозможное кол-во кораблей для строительства (в скобках значение с учетом населения).<br>Там где ресы и КК - на сколько кораблей хватит данного ресурса'
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/52VvdH27/image.png',
-    text: 'Подсчет кол-ва кораблей для строительства.<br>Там где время - минимальновозможное кол-во кораблей для строительства (в скобках значение с учетом населения).<br>Там где ресы и КК - на сколько кораблей хватит данного ресурса'
-  }
-}, {
-  group: pluginsGroups.planet.id,
-  code: 'switchArchCenters',
-  type: 'bool',
-  title: sfui_language.SWITCH_ARCH_CENTERS,
-  wndCondition: 'WndPlanets',
-  callback: () => {
-    $("#WndPlanetsEnableAll").remove();
-    $("#WndPlanetsDisableAll").remove();
-    if ($("#WndPlanets_flt_ssc_prod").children(0)[0].combo._selOption.text === sfui_language.ARCH_CENTER) {
-      $('#WndPlanets_buildings_build_title').append(`<span id='WndPlanetsEnableAll' style='cursor: pointer; color: #00D000;' onclick='empireShow.enableAll()'>вкл.</span><span style='cursor: pointer; color: #FF0000;' id='WndPlanetsDisableAll' onclick='empireShow.disableAll()'>выкл.</span>`)
-    } else {
+  {
+    group: pluginsGroups.planet.id,
+    code: 'switchArchCenters',
+    type: 'bool',
+    title: sfui_language.SWITCH_ARCH_CENTERS,
+    wndCondition: 'WndPlanets',
+    callback: () => {
       $("#WndPlanetsEnableAll").remove();
       $("#WndPlanetsDisableAll").remove();
+      if ($("#WndPlanets_flt_ssc_prod").children(0)[0].combo._selOption.text === sfui_language.ARCH_CENTER) {
+        $('#WndPlanets_buildings_build_title').append(`<span id='WndPlanetsEnableAll' style='cursor: pointer; color: #00D000;' onclick='empireShow.enableAll()'>вкл.</span><span style='cursor: pointer; color: #FF0000;' id='WndPlanetsDisableAll' onclick='empireShow.disableAll()'>выкл.</span>`)
+      } else {
+        $("#WndPlanetsEnableAll").remove();
+        $("#WndPlanetsDisableAll").remove();
+      }
+    },
+    callbackCondition: () => {
+      return getWindow('WndPlanets').activetab === 'buildings-build';
+    },
+    help: {
+      img: 'https://i.postimg.cc/s2JQSp4X/image.png',
+      text: 'В обзоре империи на влкдке "постройки" если выбрать в фильтре арх. центры то будут кнопки переключения работы арх. центров.'
     }
   },
-  callbackCondition: () => {
-    if (getWindow('WndPlanets').activetab === 'buildings-build') {
-      return 1;
+  {
+    group: pluginsGroups.planet.id,
+    code: 'addHintToTimeResources',
+    type: 'bool',
+    title: sfui_language.ENOUGH_RES,
+    wndCondition: 'WndPlanet',
+    callback: sfui.resRemainTime,
+    help: {
+      img: 'https://i.postimg.cc/G2dWJV7D/Screenshot-4.jpg',
+      text: 'Если навести на кол-во у потребляемого ресурса будет подсказка с количеством времени, на которое хватит ресурса'
     }
-    return 0;
   },
-  help: {
-    img: 'https://i.postimg.cc/s2JQSp4X/image.png',
-    text: 'В обзоре империи на влкдке "постройки" если выбрать в фильтре арх. центры то будут кнопки переключения работы арх. центров.'
-  }
-}, {
-  group: pluginsGroups.planet.id,
-  code: 'addHintToTimeResources',
-  type: 'bool',
-  title: sfui_language.ENOUGH_RES,
-  wndCondition: 'WndPlanet',
-  callback: sfui.resRemainTime,
-  callbackCondition: () => {
-    return 1;
+  {
+    group: pluginsGroups.planet.id,
+    code: 'setMaxLvlBuilds',
+    type: 'bool',
+    title: sfui_language.SET_MAX_LVL_BUILDS,
+    wndCondition: 'WndPlanet',
+    callback: sfui.setMaxLevelsBuilds,
+    help: {
+      img: 'https://i.postimg.cc/k533DBWf/Screenshot-7.jpg',
+      text: 'Для построек на планетах будут устанавливаться максимально доступные уровни'
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/G2dWJV7D/Screenshot-4.jpg',
-    text: 'Если навести на кол-во у потребляемого ресурса будет подсказка с количеством времени, на которое хватит ресурса'
-  }
-}, {
-  group: pluginsGroups.planet.id,
-  code: 'setMaxLvlBuilds',
-  type: 'bool',
-  title: sfui_language.SET_MAX_LVL_BUILDS,
-  wndCondition: 'WndPlanet',
-  callback: sfui.setMaxLevelsBuilds,
-  callbackCondition: () => {
-    return 1;
+  {
+    group: pluginsGroups.planet.id,
+    code: 'toSmallWndStarRows',
+    type: 'bool',
+    title: sfui_language.SHRINKING_SS_ROWS,
+    wndCondition: 'WndStar',
+    callback: sfui.resizeStarRows,
+    callbackCondition: () => {
+      return getWindow("WndStar").activetab === "main-planets";
+    },
+    help: {
+      img: 'https://i.postimg.cc/J0gYg2qP/Screenshot-19.jpg',
+      text: 'В окне просмотра системы строки будут минимизированны, вся информация сохранится, например размер планет, масса полей, атмосфера (в номере окрашивается в цвет атмосферы и при наведении будет подсказка), владелец и т.д.'
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/k533DBWf/Screenshot-7.jpg',
-    text: 'Для построек на планетах будут устанавливаться максимально доступные уровни'
-  }
-}, {
-  group: pluginsGroups.planet.id,
-  code: 'toSmallWndStarRows',
-  type: 'bool',
-  title: sfui_language.SHRINKING_SS_ROWS,
-  wndCondition: 'WndStar',
-  callback: sfui.resizeStarRows,
-  callbackCondition: () => {
-    return getWindow("WndStar").activetab === "main-planets";
-  },
-  help: {
-    img: 'https://i.postimg.cc/J0gYg2qP/Screenshot-19.jpg',
-    text: 'В окне просмотра системы строки будут минимизированны, вся информация сохранится, например размер планет, масса полей, атмосфера (в номере окрашивается в цвет атмосферы и при наведении будет подсказка), владелец и т.д.'
-  }
-}, {
-  group: pluginsGroups.planet.id,
-  code: 'calcTimeModuleBuilds',
-  type: 'bool',
-  title: sfui_language.CALC_SC_PROD_TIME,
-  wndCondition: 'WndBuilding',
-  callback: () => {
-    $('#WndBuilding_data .h22').each((i, e) => {
-      try {
-        let colsInRow = $(e).find('td');
-        let colTime = colsInRow[5].innerText.split(' x ');
+  {
+    group: pluginsGroups.planet.id,
+    code: 'calcTimeModuleBuilds',
+    type: 'bool',
+    title: sfui_language.CALC_SC_PROD_TIME,
+    wndCondition: 'WndBuilding',
+    callback: () => {
+      $('#WndBuilding_data .h22').each((i, e) => {
+        try {
+          let colsInRow = $(e).find('td');
+          let colTime = colsInRow[5].innerText.split(' x ');
 
-        let totalCount = sfapi.parseIntExt($(colsInRow[2]).find('input').val());
-        let countPerCycle = sfapi.parseIntExt(colTime[0]);
+          let totalCount = sfapi.parseIntExt($(colsInRow[2]).find('input').val());
+          let countPerCycle = sfapi.parseIntExt(colTime[0]);
 
-        //  Если производство не запущено или остался 1 цикл, подсказка не требуется
-        if (colTime.length <= 1 || totalCount === countPerCycle)
-          return;
+          //  Если производство не запущено или остался 1 цикл, подсказка не требуется
+          if (colTime.length <= 1 || totalCount === countPerCycle)
+            return;
 
-        let secondsPerCycle = sfapi.parseIntExt(colTime[1]);
-        let buildPerCycle = countPerCycle * secondsPerCycle;
-        let timeToBuildText = sfui_formatTimeFromHours(totalCount / buildPerCycle, false);
-        colsInRow[5].innerHTML += `<br><small style='color: #00D000; font-size: 11px !important;'>${timeToBuildText}</small>`;
-      } catch (e) { }
-    });
-  },
-  callbackCondition: () => {
-    return $('#WndBuilding_data [id^="WndBuilding_time_"]').length > 0;
-  },
-  help: {
-    img: 'https://i.postimg.cc/Zqh24XhQ/Screenshot-15.jpg',
-    text: 'В окне производства (конкретного здания) под мощностью будет выводится время в часах, до заверешения производства'
-  }
-}, {
-  group: pluginsGroups.planet.id,
-  code: 'sortUDOnPlanet',
-  type: 'bool',
-  title: sfui_language.SORT_UD_SETS_PLANET,
-  wndCondition: 'WndPlanet',
-  callback: sfui.udShufflePlanet,
-  callbackCondition: () => {
-    return 1
-  },
-  help: {
-    img: "https://i.postimg.cc/GmwwrMsx/Screenshot-26.jpg",
-    text: "в просмотре УД (планеты или флота) они будут соритроваться по сетам, недостоющие для сета части будут помечены"
-  }
-}, {
-  group: pluginsGroups.planet.id,
-  code: 'sortBuildsButtons',
-  type: 'bool',
-  title: sfui_language.SORT_BUILDS_BUTTONS,
-  wndCondition: 'WndPlanet',
-  callback: sfui.sortBuildsButtons,
-  callbackCondition: () => {
-    return 1
-  },
-  help: {
-    img: "https://i.postimg.cc/DwRPz2t2/Sort-Buildings-Buttons.png",
-    text: "Кнопки построек в нижней панели окна 'Управление планетами' будут отображаться в том же порядке, в котором они располагаются во вкладке 'Строительство' - начиная с первой вкладки построек на поверхности, заканчивая последней вкладкой модулей космобазы."
-  }
-}, {
-  group: pluginsGroups.planet.id,
-  code: 'updateValueInStorage',
-  type: 'bool',
-  title: sfui_language.PLANET_ANIM_PRODUCTION,
-  wndCondition: 'WndPlanet',
-  callback: () => {
-    let wndPlanet = getWindow('WndPlanet');
-    clearInterval(wndPlanet.timerUpdate);
-    wndPlanet.timerUpdate = setInterval(sfui.resAnimateChange, 3000, wndPlanet, 3000);
-  },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'showIDFleet',
-  type: 'bool',
-  title: sfui_language.DISPLAY_FLEET_NUM,
-  wndCondition: 'SettingsOnly',
-  callback: () => { },
-  callbackCondition: () => {
-    return 1;
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'WndFleetsBR',
-  type: 'bool',
-  title: sfui_language.SHOW_FLEET_BR_IN_FLEETS,
-  wndCondition: 'WndFleets',
-  callback: () => {
-    const wnd = getWindow("WndFleets");
-    if (wnd.activetab === "main-myfleets") {
-      $(".battle-rate-info").remove();
-      wnd.fleets.forEach(function (fleetID) {
-        let battleRait = $($(`tr[rowid='${fleetID}']`).children()[7]).find(`td:contains("${sfui_language.TEXT_BR}")`)[0].nextElementSibling.innerText;
-        let battleRaitHtml = `<span class='v-norm'>` + battleRait.split(".")[0].toString() + "</span>" + ((typeof battleRait.split(".")[1] != "undefined") ? "<span class='v-norm-dec'>." + battleRait.split(".")[1] + "</span>" : "");
-        let html = `<div class='text11 battle-rate-info' data-hint='${sfui_language.TEXT_BR}' style='display: inline-block;'>${battleRaitHtml}</div>`;
-        $($(`tr[rowid='${fleetID}']`).children()[3]).append(html);
-        let orgTd = $($($(`tr[rowid='${fleetID}']`).children()[3]).children()[0]);
-        orgTd.css("display", 'inline-block');
-        orgTd.css("width", '100px');
+          let secondsPerCycle = sfapi.parseIntExt(colTime[1]);
+          let buildPerCycle = countPerCycle * secondsPerCycle;
+          let timeToBuildText = sfui_formatTimeFromHours(totalCount / buildPerCycle, false);
+          colsInRow[5].innerHTML += `<br><small style='color: #00D000; font-size: 11px !important;'>${timeToBuildText}</small>`;
+        } catch (e) { }
       });
+    },
+    callbackCondition: () => {
+      return $('#WndBuilding_data [id^="WndBuilding_time_"]').length > 0;
+    },
+    help: {
+      img: 'https://i.postimg.cc/Zqh24XhQ/Screenshot-15.jpg',
+      text: 'В окне производства (конкретного здания) под мощностью будет выводится время в часах, до заверешения производства'
     }
   },
-  callbackCondition: () => {
-    return 1
+  {
+    group: pluginsGroups.planet.id,
+    code: 'sortUDOnPlanet',
+    type: 'bool',
+    title: sfui_language.SORT_UD_SETS_PLANET,
+    wndCondition: 'WndPlanet',
+    callback: sfui.udShufflePlanet,
+    help: {
+      img: "https://i.postimg.cc/GmwwrMsx/Screenshot-26.jpg",
+      text: "в просмотре УД (планеты или флота) они будут соритроваться по сетам, недостоющие для сета части будут помечены"
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/7hbQKkg5/Screenshot-18.jpg',
-    text: 'В окне просмотра флотов рядом с названием флота будет добавляться БР флота'
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'addExternalCommandsFleets',
-  type: 'bool',
-  title: sfui_language.EXT_BTNS_ON_FLEET,
-  wndCondition: 'WndSelect',
-  callback: sfui.wndSelectPlanet,
-  callbackCondition: () => {
-    return 1;
+  {
+    group: pluginsGroups.planet.id,
+    code: 'sortBuildsButtons',
+    type: 'bool',
+    title: sfui_language.SORT_BUILDS_BUTTONS,
+    wndCondition: 'WndPlanet',
+    callback: sfui.sortBuildsButtons,
+    help: {
+      img: "https://i.postimg.cc/DwRPz2t2/Sort-Buildings-Buttons.png",
+      text: "Кнопки построек в нижней панели окна 'Управление планетами' будут отображаться в том же порядке, в котором они располагаются во вкладке 'Строительство' - начиная с первой вкладки построек на поверхности, заканчивая последней вкладкой модулей космобазы."
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/dtfKPW3M/Screenshot-2.jpg',
-    text: 'В окне выбора колонии будут добавлены кнопки управления флотом'
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'addExternalCommandsFleetsInEmpire',
-  type: 'bool',
-  title: sfui_language.EXT_BTNS_ON_EMPIRE_OVERVIEW,
-  wndCondition: 'WndPlanets',
-  callback: sfui.externalCommandsInEmpire,
-  callbackCondition: () => {
-    return 1;
+  {
+    group: pluginsGroups.planet.id,
+    code: 'updateValueInStorage',
+    type: 'bool',
+    title: sfui_language.PLANET_ANIM_PRODUCTION,
+    wndCondition: 'WndPlanet',
+    callback: () => {
+      let wndPlanet = getWindow('WndPlanet');
+      clearInterval(wndPlanet.timerUpdate);
+      wndPlanet.timerUpdate = setInterval(sfui.resAnimateChange, 3000, wndPlanet, 3000);
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/PxyB6y9R/Screenshot-3.jpg',
-    text: 'Добавляет кнопки в обзоре империи для управления флотом'
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'calcUsedStorageInFleet',
-  type: 'bool',
-  title: sfui_language.CALC_FLEET_SPACE,
-  wndCondition: 'WndFleet',
-  callback: sfui.calcUsedStorageInFleet,
-  callbackCondition: () => {
-    return 1;
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'showIDFleet',
+    type: 'bool',
+    title: sfui_language.DISPLAY_FLEET_NUM,
+    wndCondition: 'SettingsOnly',
+    callback: () => { }
   },
-  help: {
-    img: 'https://i.postimg.cc/Bn1fqxPj/Screenshot-5.jpg',
-    text: 'При погрузке во время ввода кол-ва погружаемой ставки будет выводиться масса. Работает только для материалов, руды, минералов и т.д., все что имеет статичную массу.'
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'addExternalUnloadFleet',
-  type: 'bool',
-  title: sfui_language.ADD_BTN_DROP_ALL_NO_FUEL,
-  wndCondition: 'WndFleet',
-  callback: sfui.unloadAllNoFuelFleet,
-  callbackCondition: () => {
-    return 1;
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'WndFleetsBR',
+    type: 'bool',
+    title: sfui_language.SHOW_FLEET_BR_IN_FLEETS,
+    wndCondition: 'WndFleets',
+    callback: () => {
+      const wnd = getWindow("WndFleets");
+      if (wnd.activetab === "main-myfleets") {
+        $(".battle-rate-info").remove();
+        wnd.fleets.forEach(function (fleetID) {
+          let battleRait = $($(`tr[rowid='${fleetID}']`).children()[7]).find(`td:contains("${sfui_language.TEXT_BR}")`)[0].nextElementSibling.innerText;
+          let battleRaitHtml = `<span class='v-norm'>` + battleRait.split(".")[0].toString() + "</span>" + ((typeof battleRait.split(".")[1] != "undefined") ? "<span class='v-norm-dec'>." + battleRait.split(".")[1] + "</span>" : "");
+          let html = `<div class='text11 battle-rate-info' data-hint='${sfui_language.TEXT_BR}' style='display: inline-block;'>${battleRaitHtml}</div>`;
+          $($(`tr[rowid='${fleetID}']`).children()[3]).append(html);
+          let orgTd = $($($(`tr[rowid='${fleetID}']`).children()[3]).children()[0]);
+          orgTd.css("display", 'inline-block');
+          orgTd.css("width", '100px');
+        });
+      }
+    },
+    help: {
+      img: 'https://i.postimg.cc/7hbQKkg5/Screenshot-18.jpg',
+      text: 'В окне просмотра флотов рядом с названием флота будет добавляться БР флота'
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/FKytSNZm/Screenshot-6.jpg',
-    text: 'В верху управления флотом добавится третья кнопка, для выгрузки всего кроме топки'
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'enterToSave',
-  type: 'bool',
-  title: sfui_language.APPLY_CMD_ON_ENTER,
-  wndCondition: 'WndFleet',
-  callback: () => {
-    Array.from($(getWindow('WndFleet').win).find('input')).forEach(e => e.onkeyup = (event) => {
-      if (event.key === 'Enter') {
-        let row = $(event.target).parents('tr[id^="WndFleet_comands_row"]');
-        let btnSave = row.find(`[data-hint="${sfui_language.TEXT_SAVE_COMMAND}"]`);
-        if (btnSave.hasClass('shaddow3')) {
-          getWindow('WndFleet').add_comand('new');
-        } else {
-          btnSave.click()
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'addExternalCommandsFleets',
+    type: 'bool',
+    title: sfui_language.EXT_BTNS_ON_FLEET,
+    wndCondition: 'WndSelect',
+    callback: sfui.wndSelectPlanet,
+    help: {
+      img: 'https://i.postimg.cc/dtfKPW3M/Screenshot-2.jpg',
+      text: 'В окне выбора колонии будут добавлены кнопки управления флотом'
+    }
+  },
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'addExternalCommandsFleetsInEmpire',
+    type: 'bool',
+    title: sfui_language.EXT_BTNS_ON_EMPIRE_OVERVIEW,
+    wndCondition: 'WndPlanets',
+    callback: sfui.externalCommandsInEmpire,
+    help: {
+      img: 'https://i.postimg.cc/PxyB6y9R/Screenshot-3.jpg',
+      text: 'Добавляет кнопки в обзоре империи для управления флотом'
+    }
+  },
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'calcUsedStorageInFleet',
+    type: 'bool',
+    title: sfui_language.CALC_FLEET_SPACE,
+    wndCondition: 'WndFleet',
+    callback: sfui.calcUsedStorageInFleet,
+    help: {
+      img: 'https://i.postimg.cc/Bn1fqxPj/Screenshot-5.jpg',
+      text: 'При погрузке во время ввода кол-ва погружаемой ставки будет выводиться масса. Работает только для материалов, руды, минералов и т.д., все что имеет статичную массу.'
+    }
+  },
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'addExternalUnloadFleet',
+    type: 'bool',
+    title: sfui_language.ADD_BTN_DROP_ALL_NO_FUEL,
+    wndCondition: 'WndFleet',
+    callback: sfui.unloadAllNoFuelFleet,
+    help: {
+      img: 'https://i.postimg.cc/FKytSNZm/Screenshot-6.jpg',
+      text: 'В верху управления флотом добавится третья кнопка, для выгрузки всего кроме топки'
+    }
+  },
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'enterToSave',
+    type: 'bool',
+    title: sfui_language.APPLY_CMD_ON_ENTER,
+    wndCondition: 'WndFleet',
+    callback: () => {
+      Array.from($(getWindow('WndFleet').win).find('input')).forEach(e => e.onkeyup = (event) => {
+        if (event.key === 'Enter') {
+          let row = $(event.target).parents('tr[id^="WndFleet_comands_row"]');
+          let btnSave = row.find(`[data-hint="${sfui_language.TEXT_SAVE_COMMAND}"]`);
+          if (btnSave.hasClass('shaddow3')) {
+            getWindow('WndFleet').add_comand('new');
+          } else {
+            btnSave.click()
+          }
+        }
+      });
+    },
+    callbackCondition: () => {
+      return getWindow("WndFleet").activetab === 'main-comands';
+    }
+  },
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'allowResizeWndFleet',
+    type: 'bool',
+    title: sfui_language.ALLOW_RESIZE_FLEET_WND,
+    isAllowMobile: false,
+    wndCondition: 'WndFleet',
+    callback: () => {
+      let fleetWindow = getWindow('WndFleet').win;
+      if (!fleetWindow)
+        return;
+
+      sfui.callResizeWndFleet();
+
+      if (fleetWindow.checkEvent('onResizeFinish1'))
+        return;
+
+      fleetWindow.allowResize();
+      let dimensions = fleetWindow.getDimension();
+      fleetWindow.setMinDimension(dimensions[0], dimensions[1]);
+      fleetWindow.setMaxDimension(dimensions[0], 'auto');
+      fleetWindow.attachEvent('onMaximize', () => {
+        fleetWindow.setPosition(fleetWindow.x, 0);
+        sfui.callResizeWndFleet();
+      });
+      fleetWindow.attachEvent('onMinimize', sfui.callResizeWndFleet);
+      fleetWindow.attachEvent('onResizeFinish', sfui.callResizeWndFleet);
+      fleetWindow.attachEvent('onResizeFinish1', () => { });
+    }
+  },
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'wndFleetsUnloadButtons',
+    type: 'bool',
+    title: 'Добавить кнопки выгрузки в окне флотов',
+    wndCondition: 'WndFleets',
+    callback: async () => {
+      const wnd = getWindow("WndFleets");
+      $(".dropAllNoFuelExtInFleet").remove();
+      if (wnd.activetab === "main-myfleets") {
+        wnd.fleets.forEach(function (fleetID) {
+          let btnAppend = Array.from($($(`tr[rowid='${fleetID}']`).find('td')[5]).find('span[onclick^="fleet_external_comand"]')).at(-1);
+          if (!btnAppend)
+            return;
+
+          let parent = btnAppend.parentElement;
+          let newButton = btnAppend.outerHTML;
+          newButton = newButton.replace(/src="(.+)" /gm, 'src="/images/icons/i-unloadall-16.png" ');
+          newButton = newButton.replace(/data-hint="(.+)" src/gm, 'data-hint="Добавить компанду `Полет и выгрузить все`" src');
+          newButton = newButton.replace(/onclick="fleet_external_comand\((\d+)/gm, 'onclick="fleet_external_comand(16');
+          newButton = newButton.replace('<span', '<span class="dropAllNoFuelExtInFleet"');
+          parent.innerHTML += newButton;
+
+          newButton = newButton.replace(/src="(.+)" /gm, 'src="/images/icons/i-unloadallnofuel-16.png" ');
+          newButton = newButton.replace(/data-hint="(.+)" src/gm, 'data-hint="Добавить компанду `Полет и выгрузить все кроме топлива`" src');
+          newButton = newButton.replace(/onclick="fleet_external_comand\((\d+)/gm, 'onclick="fleet_external_comand(17');
+          newButton = newButton.replace('<span', '<span class="dropAllNoFuelExtInFleet"');
+          parent.innerHTML += newButton;
+        });
+      }
+    },
+    help: {
+      img: 'https://i.postimg.cc/xC64GCbr/Screenshot-17.jpg',
+      text: 'В окне просмотра флотов рядом командами флота добавится 2 новые команды - выгрузить все, выгрузить все кроме топлива для флота'
+    }
+  },
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'noDropHumans',
+    type: 'bool',
+    title: sfui_language.DO_NOT_UNLOAD_POP,
+    wndCondition: 'SettingsOnly',
+    callback: () => { }
+  },
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'WndFleetSmartFleets',
+    type: 'bool',
+    title: sfui_language.FLEET_SHORTCAST_FLEETS,
+    wndCondition: 'WndFleet',
+    callback: () => {
+      if ($(getWindow('WndFleet').win).find('.dhtmlx_wins_title').length > 0) {
+        $('.smartFleetBtn').remove();
+        $(getWindow('WndFleet').win).find('.dhtmlx_wins_title').html('');
+        $(getWindow('WndFleet').win).find('.dhtmlx_wins_title').css('top', 4);
+        $(getWindow('WndFleet').win).find('.dhtmlx_wins_title').append('<div class="controlbox controls-left-row w380" style="height: 27px;"></div>');
+        //controlbox
+        for (let iKey = 0; iKey < 10; iKey++) {
+          $(getWindow('WndFleet').win).find('.dhtmlx_wins_title .controlbox').append(`<div class="buttoncontainer-1 m2 smartFleetBtn" style='display: inline-block;'><button tabindex="-1" data-smartbtnid='${iKey}' data-smartfleetid='-1' oncontextmenu="sfui.showSmartFleetEdit('${iKey}'); sound_click(2); return false;" class="image_btn noselect" id="btn_WndPlayerSettings" type="button" data-hint="Флот не настроен. Нажми правой кнопокй мыши чтоб открыть настройки" style="width:20px;height:20px;border:1px solid rgba(34,170,191,0.25);" onclick=""><img oncontextmenu="return false;" width=18 class="noselect" id="btn_WndPlayerSettings_img" border="0" src="/images/icons/i_arrow_up_plus_green1.png"></button></div><div class="vsep" style="float:left;width:5px;height:100%">&nbsp;</div>`)
+        }
+        let smartFleetsData = localStorage.getItem('sf_smartFleets');
+        if (!smartFleetsData) {
+          localStorage.setItem('sf_smartFleets', JSON.stringify([]));
+          return;
+        }
+
+        let smartFleets = JSON.parse(smartFleetsData) ?? [];
+        let smartFleetsButtons = $('.smartFleetBtn button');
+        for (let iKey = 0; iKey < smartFleets.length; iKey++) {
+          if (smartFleets[iKey]) {
+            $(smartFleetsButtons[iKey]).data('smartfleetid', smartFleets[iKey].id);
+            if (smartFleets[iKey].icon != '-1') {
+              let icon = smartFleets[iKey].icon;
+              $(smartFleetsButtons[iKey]).find('img').prop('src', icon);
+            }
+            if (smartFleets[iKey].hint) {
+              $(smartFleetsButtons[iKey])[0].dataset.hint = smartFleets[iKey].hint + " - флот №" + smartFleets[iKey].id;
+            } else {
+              $(smartFleetsButtons[iKey])[0].dataset.hint = "Флот №" + smartFleets[iKey].id;
+            }
+            $($(smartFleetsButtons[iKey])[0]).attr('onclick', `sound_click(2); getWindow('WndFleet').show('id=' + ${smartFleets[iKey].id});`)
+          }
         }
       }
-    });
-  },
-  callbackCondition: () => {
-    if (getWindow("WndFleet").activetab === 'main-comands') {
-      return 1;
-    }
-    return 0;
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'allowResizeWndFleet',
-  type: 'bool',
-  title: sfui_language.ALLOW_RESIZE_FLEET_WND,
-  isAllowMobile: false,
-  wndCondition: 'WndFleet',
-  callback: () => {
-    let fleetWindow = getWindow('WndFleet').win;
-    if (!fleetWindow)
-      return;
-
-    sfui.callResizeWndFleet();
-
-    if (fleetWindow.checkEvent('onResizeFinish1'))
-      return;
-
-    fleetWindow.allowResize();
-    let dimensions = fleetWindow.getDimension();
-    fleetWindow.setMinDimension(dimensions[0], dimensions[1]);
-    fleetWindow.setMaxDimension(dimensions[0], 'auto');
-    fleetWindow.attachEvent('onMaximize', () => {
-      fleetWindow.setPosition(fleetWindow.x, 0);
-      sfui.callResizeWndFleet();
-    });
-    fleetWindow.attachEvent('onMinimize', sfui.callResizeWndFleet);
-    fleetWindow.attachEvent('onResizeFinish', sfui.callResizeWndFleet);
-    fleetWindow.attachEvent('onResizeFinish1', () => { });
-  },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'wndFleetsUnloadButtons',
-  type: 'bool',
-  title: 'Добавить кнопки выгрузки в окне флотов',
-  wndCondition: 'WndFleets',
-  callback: async () => {
-    const wnd = getWindow("WndFleets");
-    $(".dropAllNoFuelExtInFleet").remove();
-    if (wnd.activetab === "main-myfleets") {
-      wnd.fleets.forEach(function (fleetID) {
-        let btnAppend = Array.from($($(`tr[rowid='${fleetID}']`).find('td')[5]).find('span[onclick^="fleet_external_comand"]')).at(-1);
-        if (!btnAppend)
-          return;
-
-        let parent = btnAppend.parentElement;
-        let newButton = btnAppend.outerHTML;
-        newButton = newButton.replace(/src="(.+)" /gm, 'src="/images/icons/i-unloadall-16.png" ');
-        newButton = newButton.replace(/data-hint="(.+)" src/gm, 'data-hint="Добавить компанду `Полет и выгрузить все`" src');
-        newButton = newButton.replace(/onclick="fleet_external_comand\((\d+)/gm, 'onclick="fleet_external_comand(16');
-        newButton = newButton.replace('<span', '<span class="dropAllNoFuelExtInFleet"');
-        parent.innerHTML += newButton;
-
-        newButton = newButton.replace(/src="(.+)" /gm, 'src="/images/icons/i-unloadallnofuel-16.png" ');
-        newButton = newButton.replace(/data-hint="(.+)" src/gm, 'data-hint="Добавить компанду `Полет и выгрузить все кроме топлива`" src');
-        newButton = newButton.replace(/onclick="fleet_external_comand\((\d+)/gm, 'onclick="fleet_external_comand(17');
-        newButton = newButton.replace('<span', '<span class="dropAllNoFuelExtInFleet"');
-        parent.innerHTML += newButton;
-      });
+    },
+    help: {
+      img: 'https://i.postimg.cc/VLfjTpg4/image.png',
+      text: 'В шапке управления флотом будут добавлены кнопки для быстрого доступа к сохранённым флотам. По нажатию ПКМ откроется настройка кнопки, иконка подтягивается автоматически (если подтянулся крестик, значит флот находится под действием нулевого поля и его не видно).'
     }
   },
-  callbackCondition: () => {
-    return 1
-  },
-  help: {
-    img: 'https://i.postimg.cc/xC64GCbr/Screenshot-17.jpg',
-    text: 'В окне просмотра флотов рядом командами флота добавится 2 новые команды - выгрузить все, выгрузить все кроме топлива для флота'
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'noDropHumans',
-  type: 'bool',
-  title: sfui_language.DO_NOT_UNLOAD_POP,
-  wndCondition: 'SettingsOnly',
-  callback: () => { },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'WndFleetSmartFleets',
-  type: 'bool',
-  title: sfui_language.FLEET_SHORTCAST_FLEETS,
-  wndCondition: 'WndFleet',
-  callback: () => {
-    if ($(getWindow('WndFleet').win).find('.dhtmlx_wins_title').length > 0) {
-      $('.smartFleetBtn').remove();
-      $(getWindow('WndFleet').win).find('.dhtmlx_wins_title').html('');
-      $(getWindow('WndFleet').win).find('.dhtmlx_wins_title').css('top', 4);
-      $(getWindow('WndFleet').win).find('.dhtmlx_wins_title').append('<div class="controlbox controls-left-row w380" style="height: 27px;"></div>');
-      //controlbox
-      for (let iKey = 0; iKey < 10; iKey++) {
-        $(getWindow('WndFleet').win).find('.dhtmlx_wins_title .controlbox').append(`<div class="buttoncontainer-1 m2 smartFleetBtn" style='display: inline-block;'><button tabindex="-1" data-smartbtnid='${iKey}' data-smartfleetid='-1' oncontextmenu="sfui.showSmartFleetEdit('${iKey}'); sound_click(2); return false;" class="image_btn noselect" id="btn_WndPlayerSettings" type="button" data-hint="Флот не настроен. Нажми правой кнопокй мыши чтоб открыть настройки" style="width:20px;height:20px;border:1px solid rgba(34,170,191,0.25);" onclick=""><img oncontextmenu="return false;" width=18 class="noselect" id="btn_WndPlayerSettings_img" border="0" src="/images/icons/i_arrow_up_plus_green1.png"></button></div><div class="vsep" style="float:left;width:5px;height:100%">&nbsp;</div>`)
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'WndFleetSmartFlyLists',
+    type: 'bool',
+    title: sfui_language.FLEET_SHORTCAST_FLYS,
+    wndCondition: 'WndFleet',
+    callback: () => {
+      $(getWindow('WndFleet').win).find('[id^="WndFleet_comands_topage"].text10').css('width', '10px').removeClass('w20');
+      $('.WndFleetSeparatorToSmartFlyList').remove();
+      $('.smartFlyBtn').remove();
+      let container = $('#WndFleet_container div.controls-left-row.controlbox');
+      container.append(`<div class="vsep m2 h100p WndFleetSeparatorToSmartFlyList"></div>`);
+      for (let i = 0; i < 6; i++) {
+        container.append(`<button oncontextmenu="sfui.showSmartFlyListEdit('${i}', 2); return false;" id='SmartFlyList_${i}u' data-hint='Загрузить командный лист (уникальный для флота). ПКМ что бы изменить. Лист будет добавлен.' type='button' class='image_btn noselect smartFlyBtn' style='width:20px;height:20px;'><img alt="" oncontextmenu="return false;" width=16 height=16 class="noselect" border="0" src="/images/icons/arrrow_dn_16.png"></button>`);
       }
-      let smartFleetsData = localStorage.getItem('sf_smartFleets');
-      if (!smartFleetsData) {
-        localStorage.setItem('sf_smartFleets', JSON.stringify([]));
+      container.append(`<div class="vsep m2 h100p WndFleetSeparatorToSmartFlyList"></div>`);
+      for (let i = 0; i < 3; i++) {
+        container.append(`<button oncontextmenu="sfui.showSmartFlyListEdit('${i}', 1); return false;" id='SmartFlyList_${i}' data-hint='Загрузить командный лист (общие листы для всех флотов). ПКМ что бы изменить. Лист будет добавлен.' type='button' class='image_btn noselect smartFlyBtn' style='width:20px;height:20px;'><img alt="" oncontextmenu="return false;" width=16 height=16 class="noselect" border="0" src="/images/icons/arrrow_dn_16.png"></button>`);
+      }
+
+      let fleetID = getWindow('WndFleet').fleetid;
+      let smartFlyListDataU = localStorage.getItem('sf_smartFlyList_' + fleetID);
+      if (!smartFlyListDataU) {
+        smartFlyListDataU = Array(6);
+        localStorage.setItem('sf_smartFlyList_' + fleetID, JSON.stringify(smartFlyListDataU));
+      } else
+        smartFlyListDataU = JSON.parse(smartFlyListDataU);
+
+      for (let i = 0; i < 6; i++) {
+        if (!smartFlyListDataU[i])
+          continue;
+        try {
+          $(`#SmartFlyList_${i}u`).on('click', async () => {
+            getWindow('WndFleet').start_load();
+            await fetch(`/?m=windows&w=WndFleet&a=loadflylist&dest=window&flylistid=${smartFlyListDataU[i].id}&fleetmode=2`, {
+              "headers": {
+                "accept": "*/*",
+                "x-requested-with": "XMLHttpRequest"
+              },
+              "body": null,
+              "method": "GET",
+              "mode": "cors",
+              "credentials": "include"
+            });
+            getWindow('WndFleet').end_load();
+            getWindow('WndFleet').refresh();
+          });
+          $(`#SmartFlyList_${i}u`).attr('data-hint', smartFlyListDataU[i].hint);
+          let icon;
+          if (smartFlyListDataU[i].icon)
+            icon = smartFlyListDataU[i].icon;
+          else icon = '/images/icons/i_arrow_up_plus_green1.png';
+          $(`#SmartFlyList_${i}u img`).attr('src', icon);
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+
+      let smartFlyListData = localStorage.getItem('sf_smartFlyList');
+      if (!smartFlyListData) {
+        localStorage.setItem('sf_smartFlyList', JSON.stringify(Array(3)));
         return;
       }
 
-      let smartFleets = JSON.parse(smartFleetsData) ?? [];
-      let smartFleetsButtons = $('.smartFleetBtn button');
-      for (let iKey = 0; iKey < smartFleets.length; iKey++) {
-        if (smartFleets[iKey]) {
-          $(smartFleetsButtons[iKey]).data('smartfleetid', smartFleets[iKey].id);
-          if (smartFleets[iKey].icon != '-1') {
-            let icon = smartFleets[iKey].icon;
-            $(smartFleetsButtons[iKey]).find('img').prop('src', icon);
-          }
-          if (smartFleets[iKey].hint) {
-            $(smartFleetsButtons[iKey])[0].dataset.hint = smartFleets[iKey].hint + " - флот №" + smartFleets[iKey].id;
-          } else {
-            $(smartFleetsButtons[iKey])[0].dataset.hint = "Флот №" + smartFleets[iKey].id;
-          }
-          $($(smartFleetsButtons[iKey])[0]).attr('onclick', `sound_click(2); getWindow('WndFleet').show('id=' + ${smartFleets[iKey].id});`)
+      smartFlyListData = JSON.parse(smartFlyListData);
+      for (let i = 0; i < 3; i++) {
+        if (!smartFlyListData[i])
+          continue;
+        try {
+          $(`#SmartFlyList_${i}`).on('click', async () => {
+            getWindow('WndFleet').start_load();
+            await fetch(`/?m=windows&w=WndFleet&a=loadflylist&dest=window&flylistid=${smartFlyListData[i].id}&fleetmode=2`, {
+              "headers": {
+                "accept": "*/*",
+                "x-requested-with": "XMLHttpRequest"
+              },
+              "body": null,
+              "method": "GET",
+              "mode": "cors",
+              "credentials": "include"
+            });
+            getWindow('WndFleet').end_load();
+            getWindow('WndFleet').refresh();
+          });
+          $(`#SmartFlyList_${i}`).attr('data-hint', smartFlyListData[i].hint)
+          let icon;
+          if (smartFlyListData[i].icon)
+            icon = smartFlyListData[i].icon;
+          else icon = '/images/icons/i_arrow_up_plus_green1.png';
+          $(`#SmartFlyList_${i} img`).attr('src', icon);
+        } catch (e) {
+          console.warn(e);
         }
       }
+    },
+    callbackCondition: () => {
+      return getWindow('WndFleet').activetab === 'main-comands';
     }
   },
-  callbackCondition: () => {
-    return 1;
-  },
-  help: {
-    img: 'https://i.postimg.cc/VLfjTpg4/image.png',
-    text: 'В шапке управления флотом будут добавлены кнопки для быстрого доступа к сохранённым флотам. По нажатию ПКМ откроется настройка кнопки, иконка подтягивается автоматически (если подтянулся крестик, значит флот находится под действием нулевого поля и его не видно).'
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'WndFleetSmartFlyLists',
-  type: 'bool',
-  title: sfui_language.FLEET_SHORTCAST_FLYS,
-  wndCondition: 'WndFleet',
-  callback: () => {
-    $(getWindow('WndFleet').win).find('[id^="WndFleet_comands_topage"].text10').css('width', '10px').removeClass('w20');
-    $('.WndFleetSeparatorToSmartFlyList').remove();
-    $('.smartFlyBtn').remove();
-    let container = $('#WndFleet_container div.controls-left-row.controlbox');
-    container.append(`<div class="vsep m2 h100p WndFleetSeparatorToSmartFlyList"></div>`);
-    for (let i = 0; i < 6; i++) {
-      container.append(`<button oncontextmenu="sfui.showSmartFlyListEdit('${i}', 2); return false;" id='SmartFlyList_${i}u' data-hint='Загрузить командный лист (уникальный для флота). ПКМ что бы изменить. Лист будет добавлен.' type='button' class='image_btn noselect smartFlyBtn' style='width:20px;height:20px;'><img alt="" oncontextmenu="return false;" width=16 height=16 class="noselect" border="0" src="/images/icons/arrrow_dn_16.png"></button>`);
-    }
-    container.append(`<div class="vsep m2 h100p WndFleetSeparatorToSmartFlyList"></div>`);
-    for (let i = 0; i < 3; i++) {
-      container.append(`<button oncontextmenu="sfui.showSmartFlyListEdit('${i}', 1); return false;" id='SmartFlyList_${i}' data-hint='Загрузить командный лист (общие листы для всех флотов). ПКМ что бы изменить. Лист будет добавлен.' type='button' class='image_btn noselect smartFlyBtn' style='width:20px;height:20px;'><img alt="" oncontextmenu="return false;" width=16 height=16 class="noselect" border="0" src="/images/icons/arrrow_dn_16.png"></button>`);
-    }
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'WndFleetInfoExrension',
+    type: 'bool',
+    title: sfui_language.EXP_FLEET_VIEW,
+    wndCondition: 'WndFleetInfo',
+    callback: () => {
+      // let fleetId = getWindow('WndFleetInfo').urlp.split("=")[1];
+      // $($($("#WndFleetInfo_container tr")[1])[0].firstChild).css({
+      //   'color': "d4be64", 'cursor': "pointer"
+      // }).on('click', function () {
+      //   navigator.clipboard.writeText(fleetId);
+      // });
+      //$($("#WndFleetInfo_container tr")[1])[0].firstChild.setAttribute('data-hint', "Нажмите, что бы скопировать.");
+      //WndFleet.lastSelectID = parseInt($($("#WndFleetInfo_container tr")[1])[0].firstChild.innerText);
+      let intBR;
+      let elemBR = $($(`#WndFleetInfo_container img[data-hint^='${sfui_language.TEXT_BR_EX}']`)[0].parentElement.nextElementSibling);
+      if (typeof elemBR.find("span[class='v-norm-dec']").data("hint") === "number")
+        intBR = elemBR.find("span[class='v-norm-dec']").data("hint") * 2;
 
-    let fleetID = getWindow('WndFleet').fleetid;
-    let smartFlyListDataU = localStorage.getItem('sf_smartFlyList_' + fleetID);
-    if (!smartFlyListDataU) {
-      smartFlyListDataU = Array(6);
-      localStorage.setItem('sf_smartFlyList_' + fleetID, JSON.stringify(smartFlyListDataU));
-    } else
-      smartFlyListDataU = JSON.parse(smartFlyListDataU);
-
-    for (let i = 0; i < 6; i++) {
-      if (!smartFlyListDataU[i])
-        continue;
-      try {
-        $(`#SmartFlyList_${i}u`).on('click', async () => {
-          getWindow('WndFleet').start_load();
-          await fetch(`/?m=windows&w=WndFleet&a=loadflylist&dest=window&flylistid=${smartFlyListDataU[i].id}&fleetmode=2`, {
-            "headers": {
-              "accept": "*/*",
-              "x-requested-with": "XMLHttpRequest"
-            },
-            "body": null,
-            "method": "GET",
-            "mode": "cors",
-            "credentials": "include"
-          });
-          getWindow('WndFleet').end_load();
-          getWindow('WndFleet').refresh();
-        });
-        $(`#SmartFlyList_${i}u`).attr('data-hint', smartFlyListDataU[i].hint);
-        let icon;
-        if (smartFlyListDataU[i].icon)
-          icon = smartFlyListDataU[i].icon;
-        else icon = '/images/icons/i_arrow_up_plus_green1.png';
-        $(`#SmartFlyList_${i}u img`).attr('src', icon);
-      } catch (e) {
-        console.warn(e);
+      if (!intBR) {
+        if (elemBR.find("span[class='v-null']").length > 0)
+          intBR = parseInt(elemBR.find("span[class='v-null']")[0].innerText);
+        else
+          intBR = sfapi.parseIntExt(elemBR.find("span[class='v-norm']")[0].innerText.split(".")[0]) * 2;
       }
-    }
-
-    let smartFlyListData = localStorage.getItem('sf_smartFlyList');
-    if (!smartFlyListData) {
-      localStorage.setItem('sf_smartFlyList', JSON.stringify(Array(3)));
-      return;
-    }
-
-    smartFlyListData = JSON.parse(smartFlyListData);
-    for (let i = 0; i < 3; i++) {
-      if (!smartFlyListData[i])
-        continue;
-      try {
-        $(`#SmartFlyList_${i}`).on('click', async () => {
-          getWindow('WndFleet').start_load();
-          await fetch(`/?m=windows&w=WndFleet&a=loadflylist&dest=window&flylistid=${smartFlyListData[i].id}&fleetmode=2`, {
-            "headers": {
-              "accept": "*/*",
-              "x-requested-with": "XMLHttpRequest"
-            },
-            "body": null,
-            "method": "GET",
-            "mode": "cors",
-            "credentials": "include"
-          });
-          getWindow('WndFleet').end_load();
-          getWindow('WndFleet').refresh();
-        });
-        $(`#SmartFlyList_${i}`).attr('data-hint', smartFlyListData[i].hint)
-        let icon;
-        if (smartFlyListData[i].icon)
-          icon = smartFlyListData[i].icon;
-        else icon = '/images/icons/i_arrow_up_plus_green1.png';
-        $(`#SmartFlyList_${i} img`).attr('src', icon);
-      } catch (e) {
-        console.warn(e);
-      }
-    }
-  },
-  callbackCondition: () => {
-    if (getWindow('WndFleet').activetab === 'main-comands')
-      return 1;
-    return 0;
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'WndFleetInfoExrension',
-  type: 'bool',
-  title: sfui_language.EXP_FLEET_VIEW,
-  wndCondition: 'WndFleetInfo',
-  callback: () => {
-    // let fleetId = getWindow('WndFleetInfo').urlp.split("=")[1];
-    // $($($("#WndFleetInfo_container tr")[1])[0].firstChild).css({
-    //   'color': "d4be64", 'cursor': "pointer"
-    // }).on('click', function () {
-    //   navigator.clipboard.writeText(fleetId);
-    // });
-    //$($("#WndFleetInfo_container tr")[1])[0].firstChild.setAttribute('data-hint', "Нажмите, что бы скопировать.");
-    //WndFleet.lastSelectID = parseInt($($("#WndFleetInfo_container tr")[1])[0].firstChild.innerText);
-    let intBR;
-    let elemBR = $($(`#WndFleetInfo_container img[data-hint^='${sfui_language.TEXT_BR_EX}']`)[0].parentElement.nextElementSibling);
-    if (typeof elemBR.find("span[class='v-norm-dec']").data("hint") === "number")
-      intBR = elemBR.find("span[class='v-norm-dec']").data("hint") * 2;
-
-    if (!intBR) {
-      if (elemBR.find("span[class='v-null']").length > 0)
-        intBR = parseInt(elemBR.find("span[class='v-null']")[0].innerText);
-      else
-        intBR = sfapi.parseIntExt(elemBR.find("span[class='v-norm']")[0].innerText.split(".")[0]) * 2;
-    }
-    $(elemBR).append("<div style='color: orange;'>" + sfapi.tls(intBR) + "</div>").css('width', '130px').css('font-size', '11px').removeClass('w90');
-    $($(`#WndFleetInfo_container img[data-hint^='${sfui_language.TEXT_DURABILITY}']`)[0].parentElement.nextElementSibling).css('width', '45px').removeClass('w80');
-    getWindow("WndFleetInfo").win.allowResize();
-    let targetElement = $(`#WndFleetInfo_container div:contains('${sfui_language.ANC_DEVICES}').cell_hdr`)[0];
-    let item = `<div class='controls-center-row textbox no-border-top h28 w100p'>
+      $(elemBR).append("<div style='color: orange;'>" + sfapi.tls(intBR) + "</div>").css('width', '130px').css('font-size', '11px').removeClass('w90');
+      $($(`#WndFleetInfo_container img[data-hint^='${sfui_language.TEXT_DURABILITY}']`)[0].parentElement.nextElementSibling).css('width', '45px').removeClass('w80');
+      getWindow("WndFleetInfo").win.allowResize();
+      let targetElement = $(`#WndFleetInfo_container div:contains('${sfui_language.ANC_DEVICES}').cell_hdr`)[0];
+      let item = `<div class='controls-center-row textbox no-border-top h28 w100p'>
           <span class='w-100' style="height:16px; text-align: center;">
           <small id='CalculateRocketsButton' style='cursor: pointer; color: orange;' onclick='sfui.calculateRockets()'>${sfui_language.CALC_DEVIATION}</small>
           </span></div>`;
-    let p = document.createElement('div');
-    p.innerHTML = item;
-    targetElement.insertAdjacentElement('beforeBegin', p);
-    item = `<div class='controls-center-row textbox no-border-top h28 w100p'>
+      let p = document.createElement('div');
+      p.innerHTML = item;
+      targetElement.insertAdjacentElement('beforeBegin', p);
+      item = `<div class='controls-center-row textbox no-border-top h28 w100p'>
           <span class='w-100' style="height:16px; text-align: center;">
          <small id='CalculateFleetButton' style='cursor: pointer; color: orange;' onclick='sfui.calculateFleetInfo()'>${sfui_language.DETAIL_FLEET_INFO}</small>
           </span></div>`;
-    p = document.createElement('div');
-    p.innerHTML = item;
-    targetElement.insertAdjacentElement('beforeBegin', p);
+      p = document.createElement('div');
+      p.innerHTML = item;
+      targetElement.insertAdjacentElement('beforeBegin', p);
+    },
+    help: {
+      img: 'https://i.postimg.cc/wjxdjxz1/Screenshot-23.jpg',
+      text: 'В окне просмотра сведений о чужом флоте выводит удвоенный БР и расчёт отклонения ракет'
+    }
   },
-  callbackCondition: () => {
-    return 1
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'ShuffleUDInFleet',
+    type: 'bool',
+    title: sfui_language.SORT_UD_SETS_FLEET,
+    wndCondition: 'WndFleet',
+    callback: sfui.udShuffleFleet,
+    help: {
+      img: "https://i.postimg.cc/GmwwrMsx/Screenshot-26.jpg",
+      text: "в просмотре УД (планеты или флота) они будут соритроваться по сетам, недостоющие для сета части будут помечены"
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/wjxdjxz1/Screenshot-23.jpg',
-    text: 'В окне просмотра сведений о чужом флоте выводит удвоенный БР и расчёт отклонения ракет'
-  }
-}, {
-  group: pluginsGroups.fleet.id,
-  code: 'ShuffleUDInFleet',
-  type: 'bool',
-  title: sfui_language.SORT_UD_SETS_FLEET,
-  wndCondition: 'WndFleet',
-  callback: sfui.udShuffleFleet,
-  callbackCondition: () => {
-    return 1
+  {
+    group: pluginsGroups.tech.id,
+    code: 'setMaxTech',
+    type: 'bool',
+    title: sfui_language.SET_MAX_TECH,
+    wndCondition: 'WndScience',
+    callback: sfui.wndScienceSetMaxTech,
+    help: {
+      img: 'https://i.postimg.cc/J7PLK7Wz/Screenshot-1.jpg',
+      text: 'В окне технологий будут устанавливаться максимальные уровни'
+    }
   },
-  help: {
-    img: "https://i.postimg.cc/GmwwrMsx/Screenshot-26.jpg",
-    text: "в просмотре УД (планеты или флота) они будут соритроваться по сетам, недостоющие для сета части будут помечены"
-  }
-}, {
-  group: pluginsGroups.tech.id,
-  code: 'setMaxTech',
-  type: 'bool',
-  title: sfui_language.SET_MAX_TECH,
-  wndCondition: 'WndScience',
-  callback: sfui.wndScienceSetMaxTech,
-  callbackCondition: () => {
-    return 1;
-  },
-  help: {
-    img: 'https://i.postimg.cc/J7PLK7Wz/Screenshot-1.jpg',
-    text: 'В окне технологий будут устанавливаться максимальные уровни'
-  }
-}, {
-  group: pluginsGroups.tech.id,
-  code: 'sortTechByTime',
-  type: 'bool',
-  title: sfui_language.SORT_TECHS,
-  wndCondition: 'WndScience',
-  callback: () => {
-    const parentElement_jq = $('#WndScience_science_seq_form > div > .data_table.p0 > tbody');
-    if (!parentElement_jq.length || parentElement_jq[0].dataset.sorted)
-      return;
+  {
+    group: pluginsGroups.tech.id,
+    code: 'sortTechByTime',
+    type: 'bool',
+    title: sfui_language.SORT_TECHS,
+    wndCondition: 'WndScience',
+    callback: () => {
+      const parentElement_jq = $('#WndScience_science_seq_form > div > .data_table.p0 > tbody');
+      if (!parentElement_jq.length || parentElement_jq[0].dataset.sorted)
+        return;
 
-    const rows_jq = parentElement_jq.children('tr.h24:not(:has(> td[colspan]))');
-    const rowsSorted = rows_jq.map((i, row) => {
-      const secAttrData = row.childNodes[5].getAttribute('sec');
-      const remTime = secAttrData ? parseInt(secAttrData) : Number.MAX_SAFE_INTEGER;
-      return { remTime, row };
-    }).get().sort((r1, r2) => r1.remTime - r2.remTime).map(x => x.row);
+      const rows_jq = parentElement_jq.children('tr.h24:not(:has(> td[colspan]))');
+      const rowsSorted = rows_jq.map((i, row) => {
+        const secAttrData = row.childNodes[5].getAttribute('sec');
+        const remTime = secAttrData ? parseInt(secAttrData) : Number.MAX_SAFE_INTEGER;
+        return { remTime, row };
+      }).get().sort((r1, r2) => r1.remTime - r2.remTime).map(x => x.row);
 
-    parentElement_jq[0].replaceChildren(...rowsSorted);
-    parentElement_jq[0].dataset.sorted = true;
+      parentElement_jq[0].replaceChildren(...rowsSorted);
+      parentElement_jq[0].dataset.sorted = true;
+    }
   },
-  callbackCondition: () => {
-    return 1;
-  }
-}, {
-  group: pluginsGroups.tech.id,
-  code: 'WndProjectDiffChecker',
-  type: 'bool',
-  title: sfui_language.DIFF_CHECKER,
-  wndCondition: 'WndShipProjects',
-  callback: () => {
-    $("#diffCheckerBTN").remove();
-    $("#WndShipProjects_flt_form .controls-center-row").append(`
+  {
+    group: pluginsGroups.tech.id,
+    code: 'WndProjectDiffChecker',
+    type: 'bool',
+    title: sfui_language.DIFF_CHECKER,
+    wndCondition: 'WndShipProjects',
+    callback: () => {
+      $("#diffCheckerBTN").remove();
+      $("#WndShipProjects_flt_form .controls-center-row").append(`
       <button tabindex="-1" id='diffCheckerBTN' class="image_btn noselect" type="button" data-hint="${sfui_language.COMP_TWO_PROJECTS}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.openDiffChecker()">
       <img class="noselect" border="0" src="/images/icons/flat/i-to-angar-12.png">
       </button>`)
-  },
-  callbackCondition: () => {
-    return 1;
-  },
-  help: {
-    img: 'https://i.postimg.cc/NFsWjLCy/Screenshot-20.jpg',
-    text: 'Позволяет сравнить 2 проекта и вывести разницу в модулях и экспоритровать её в органайзер с желаемым множетелем. Кнопка находится в окне проектов кораблей, справа от фильтра. В левую часть прописывается номер исходного проекта, в правую часть - нового. После вставки второго проекта сравнение запустится автоматически. В центральной колонке будет выведен список требуемых для модернизации модулей.'
-  }
-}, {
-  group: pluginsGroups.tech.id,
-  code: 'saveAsImageButton',
-  type: 'bool',
-  title: sfui_language.SAVE_PROJECT_AS_IMAGE,
-  wndCondition: 'WndShipProjectInfo',
-  callback: () => {
-    if (!this.inited) {
-      let html2canvas_script = document.createElement('script');
-      html2canvas_script.setAttribute('src', 'https://html2canvas.hertzen.com/dist/html2canvas.min.js');
-      document.head.appendChild(html2canvas_script);
-      this.inited = true;
+    },
+    help: {
+      img: 'https://i.postimg.cc/NFsWjLCy/Screenshot-20.jpg',
+      text: 'Позволяет сравнить 2 проекта и вывести разницу в модулях и экспоритровать её в органайзер с желаемым множетелем. Кнопка находится в окне проектов кораблей, справа от фильтра. В левую часть прописывается номер исходного проекта, в правую часть - нового. После вставки второго проекта сравнение запустится автоматически. В центральной колонке будет выведен список требуемых для модернизации модулей.'
     }
-    $("#saveAsImgBTN").remove();
-    $("#WndShipProjectInfo_project_group_form > div.controls-center-row").append(`
+  },
+  {
+    group: pluginsGroups.tech.id,
+    code: 'saveAsImageButton',
+    type: 'bool',
+    title: sfui_language.SAVE_PROJECT_AS_IMAGE,
+    wndCondition: 'WndShipProjectInfo',
+    callback: () => {
+      if (!this.inited) {
+        let html2canvas_script = document.createElement('script');
+        html2canvas_script.setAttribute('src', 'https://html2canvas.hertzen.com/dist/html2canvas.min.js');
+        document.head.appendChild(html2canvas_script);
+        this.inited = true;
+      }
+      $("#saveAsImgBTN").remove();
+      $("#WndShipProjectInfo_project_group_form > div.controls-center-row").append(`
         <button id="saveAsImgBTN" class="image_btn noselect" type="button" data-hint="${sfui_language.COPY_PROJ_AS_IMAGE}" style="width:22px;height:22px;" onclick="sound_click(2); sfui.shipProjInfo_ProjCopyAsImg();">
           <img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/i_copy_16.png">
         </button>`);
+    },
+    help: {
+      img: 'https://i.postimg.cc/5tfRd25t/Save-As-Image-Help.jpg',
+      text: 'Добавляет кнопку для сохранения ПОЛНОГО скриншота открытого проекта в буфер обмена'
+    }
   },
-  callbackCondition: () => {
-    return 1;
-  },
-  help: {
-    img: 'https://i.postimg.cc/5tfRd25t/Save-As-Image-Help.jpg',
-    text: 'Добавляет кнопку для сохранения ПОЛНОГО скриншота открытого проекта в буфер обмена'
-  }
-}, {
-  group: pluginsGroups.tech.id,
-  code: 'addLoadModuleFromCreateShipProject',
-  type: 'bool',
-  title: sfui_language.ADD_LOAD_BUTTON_IN_DESIGN,
-  wndCondition: 'WndSelect',
-  callback: () => {
-    $('.loadFromCreateProject').remove();
-    $('.hintcontent[id^="WndSelect_planets_hint"]').each((i, e) => {
-      let planets = [];
-      $(e).find(`span[onclick]`).each((ii, ee) => {
-        let planetText = ee.onclick.toString()
-        let idPlanet = /planetid=(\d+)/gm.exec(planetText)[1];
-        planets.push(idPlanet);
+  {
+    group: pluginsGroups.tech.id,
+    code: 'addLoadModuleFromCreateShipProject',
+    type: 'bool',
+    title: sfui_language.ADD_LOAD_BUTTON_IN_DESIGN,
+    wndCondition: 'WndSelect',
+    callback: () => {
+      $('.loadFromCreateProject').remove();
+      $('.hintcontent[id^="WndSelect_planets_hint"]').each((i, e) => {
+        let planets = [];
+        $(e).find(`span[onclick]`).each((ii, ee) => {
+          let planetText = ee.onclick.toString()
+          let idPlanet = /planetid=(\d+)/gm.exec(planetText)[1];
+          planets.push(idPlanet);
+        });
+        let moduleData = /Productions-(\d+):(\d+)&amp;level=(\d+)/gm.exec($($(e).parent().parent().parent().children()[0]).html());
+        let idModule = moduleData[1];
+        let idRace = moduleData[2];
+        let moduleLevel = moduleData[3];
+        $(e).find('.h18').each((ii, ee) => {
+          let moduleCount = sfapi.parseIntExt($($(e).find('.value.text11.w60')[ii]).text());
+          $(ee).append(`<td class="loadFromCreateProject"><button onclick="sound_click(2);fleet_external_comand(10,'${planets[ii]}:${idModule}-${idRace}-${moduleLevel}-${moduleCount}');return cancelEvent(event);" class="image_btn noselect" style="width:16px;height:16px;"><img src="/images/icons/i-load-12.png" style="width: 14px; height: 14px"></button></td>`)
+        });
       });
-      let moduleData = /Productions-(\d+):(\d+)&amp;level=(\d+)/gm.exec($($(e).parent().parent().parent().children()[0]).html());
-      let idModule = moduleData[1];
-      let idRace = moduleData[2];
-      let moduleLevel = moduleData[3];
-      $(e).find('.h18').each((ii, ee) => {
-        let moduleCount = sfapi.parseIntExt($($(e).find('.value.text11.w60')[ii]).text());
-        $(ee).append(`<td class="loadFromCreateProject"><button onclick="sound_click(2);fleet_external_comand(10,'${planets[ii]}:${idModule}-${idRace}-${moduleLevel}-${moduleCount}');return cancelEvent(event);" class="image_btn noselect" style="width:16px;height:16px;"><img src="/images/icons/i-load-12.png" style="width: 14px; height: 14px"></button></td>`)
-      });
-    });
+    },
+    help: {
+      img: 'https://i.postimg.cc/YC5v7sJ8/Screenshot-22.jpg',
+      text: 'При выборе модуля, на подсказке о кол-ве модулей на планетах будет кнопка "погрузить все" для открытого флота'
+    }
   },
-  callbackCondition: () => {
-    return 1;
-  },
-  help: {
-    img: 'https://i.postimg.cc/YC5v7sJ8/Screenshot-22.jpg',
-    text: 'При выборе модуля, на подсказке о кол-ве модулей на планетах будет кнопка "погрузить все" для открытого флота'
-  }
-}, {
-  group: pluginsGroups.tech.id,
-  code: 'allowResizeWndShipProject',
-  type: 'bool',
-  title: sfui_language.ALLOW_RESIZE_DESIGN_WND,
-  isAllowMobile: false,
-  wndCondition: 'WndShipProject',
-  callback: () => {
-    let projectWindow = getWindow('WndShipProject').win;
-    if (!projectWindow)
-      return;
+  {
+    group: pluginsGroups.tech.id,
+    code: 'allowResizeWndShipProject',
+    type: 'bool',
+    title: sfui_language.ALLOW_RESIZE_DESIGN_WND,
+    isAllowMobile: false,
+    wndCondition: 'WndShipProject',
+    callback: () => {
+      let projectWindow = getWindow('WndShipProject').win;
+      if (!projectWindow)
+        return;
 
-    sfui.callResizeWndShipProject();
-
-    if (projectWindow.checkEvent('onResizeFinish1'))
-      return;
-
-    projectWindow.allowResize();
-    let dimensions = projectWindow.getDimension();
-    projectWindow.setMinDimension(dimensions[0], dimensions[1]);
-    projectWindow.setMaxDimension(dimensions[0], 'auto');
-    projectWindow.attachEvent('onMaximize', () => {
-      projectWindow.setPosition(projectWindow.x, 0);
       sfui.callResizeWndShipProject();
-    });
-    projectWindow.attachEvent('onMinimize', sfui.callResizeWndShipProject);
-    projectWindow.attachEvent('onResizeFinish', sfui.callResizeWndShipProject);
-    projectWindow.attachEvent('onResizeFinish1', () => { });
-  },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.automation.id,
-  code: 'autoTransports',
-  type: 'bool',
-  title: sfui_language.PLANET_TRANSFER,
-  wndCondition: 'WndSelect',
-  callback: empireShow.autoTransports,
-  callbackCondition: () => {
-    if (getWindow('WndSelect').win.getText() === sfui_language.SELECT_COLONY) {
-      return 1;
+
+      if (projectWindow.checkEvent('onResizeFinish1'))
+        return;
+
+      projectWindow.allowResize();
+      let dimensions = projectWindow.getDimension();
+      projectWindow.setMinDimension(dimensions[0], dimensions[1]);
+      projectWindow.setMaxDimension(dimensions[0], 'auto');
+      projectWindow.attachEvent('onMaximize', () => {
+        projectWindow.setPosition(projectWindow.x, 0);
+        sfui.callResizeWndShipProject();
+      });
+      projectWindow.attachEvent('onMinimize', sfui.callResizeWndShipProject);
+      projectWindow.attachEvent('onResizeFinish', sfui.callResizeWndShipProject);
+      projectWindow.attachEvent('onResizeFinish1', () => { });
     }
-    return 0;
   },
-  help: {
-    img: 'https://i.postimg.cc/cC6k6hmW/Screenshot-28.jpg',
-    text: 'Функция формирующая полетный лист на выбранные планеты для развора ресомата'
-  }
-}, {
-  group: pluginsGroups.automation.id,
-  code: 'autoTransportsInEmpireShow',
-  type: 'bool',
-  title: sfui_language.PLANET_TRANSFER_EMPIRE_SHOW,
-  wndCondition: 'WndPlanets',
-  callback: empireShow.autoTransportsWndPlanets,
-  callbackCondition: () => {
-    if (getWindow('WndPlanets').activetab === 'buildings-build') {
-      return 1;
+  {
+    group: pluginsGroups.automation.id,
+    code: 'autoTransports',
+    type: 'bool',
+    title: sfui_language.PLANET_TRANSFER,
+    wndCondition: 'WndSelect',
+    callback: empireShow.autoTransports,
+    callbackCondition: () => {
+      return getWindow('WndSelect').win.getText() === sfui_language.SELECT_COLONY;
+    },
+    help: {
+      img: 'https://i.postimg.cc/cC6k6hmW/Screenshot-28.jpg',
+      text: 'Функция формирующая полетный лист на выбранные планеты для развора ресомата'
     }
-    return 0;
-  }
-}, {
-  group: pluginsGroups.automation.id,
-  code: 'addLoadMaterialsInQuest',
-  type: 'bool',
-  title: sfui_language.QUEST_ADD_BTN_LOAD,
-  wndCondition: 'WndQuestStart',
-  callback: async () => {
-    let wndData = $('#WndQuestStart_container').text();
-    if (wndData.indexOf('Федерации срочно требуется:') + 1) {
-      let fToLoadQ = async () => {
-        getWindow('WndFleet').start_load();
-        let materialText = $('#WndQuestStart_container [style="color:#93a7a2"]').text();
-        let materialIdData = sfdata.productions.filter(e => e.name === materialText);
-        let materialId = -1;
-        if (materialIdData) {
-          materialId = materialIdData[0].id;
+  },
+  {
+    group: pluginsGroups.automation.id,
+    code: 'autoTransportsInEmpireShow',
+    type: 'bool',
+    title: sfui_language.PLANET_TRANSFER_EMPIRE_SHOW,
+    wndCondition: 'WndPlanets',
+    callback: empireShow.autoTransportsWndPlanets,
+    callbackCondition: () => {
+      return getWindow('WndPlanets').activetab === 'buildings-build';
+    }
+  },
+  {
+    group: pluginsGroups.automation.id,
+    code: 'addLoadMaterialsInQuest',
+    type: 'bool',
+    title: sfui_language.QUEST_ADD_BTN_LOAD,
+    wndCondition: 'WndQuestStart',
+    callback: async () => {
+      let wndData = $('#WndQuestStart_container').text();
+      if (wndData.indexOf('Федерации срочно требуется:') + 1) {
+        let fToLoadQ = async () => {
+          getWindow('WndFleet').start_load();
+          let materialText = $('#WndQuestStart_container [style="color:#93a7a2"]').text();
+          let materialIdData = sfdata.productions.filter(e => e.name === materialText);
+          let materialId = -1;
+          if (materialIdData) {
+            materialId = materialIdData[0].id;
+          }
+          let materialCount = -1;
+          if (materialId) { // TODO!
+            materialCount = sfapi.parseIntExt(wndData.split('в количестве ')[1].split('шт.')[0]);
+          }
+          if (materialId >= 0 && materialCount >= 0) {
+            await sfapi.loadToFleet(materialId, materialCount);
+            getWindow('WndFleet').end_load();
+            getWindow('WndFleet').refresh();
+          }
         }
-        let materialCount = -1;
-        if (materialId) { // TODO!
-          materialCount = sfapi.parseIntExt(wndData.split('в количестве ')[1].split('шт.')[0]);
-        }
-        if (materialId >= 0 && materialCount >= 0) {
-          await sfapi.loadToFleet(materialId, materialCount);
-          getWindow('WndFleet').end_load();
-          getWindow('WndFleet').refresh();
+        let html = `<button id='loadToFleetQuest' tabindex="-1" oncontextmenu="return false;" class="image_btn noselect" type="button" data-hint="Погрузить" style="width:20px;height:20px;"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/i_buy_12.png"></button>`
+        $('#WndQuestStart_container [style="color:#93a7a2"]').append(html);
+        $('#loadToFleetQuest')[0].onclick = () => {
+          sound_click(2);
+          fToLoadQ();
         }
       }
-      let html = `<button id='loadToFleetQuest' tabindex="-1" oncontextmenu="return false;" class="image_btn noselect" type="button" data-hint="Погрузить" style="width:20px;height:20px;"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/i_buy_12.png"></button>`
-      $('#WndQuestStart_container [style="color:#93a7a2"]').append(html);
-      $('#loadToFleetQuest')[0].onclick = () => {
-        sound_click(2);
-        fToLoadQ();
-      }
+    },
+    help: {
+      img: 'https://i.postimg.cc/JnrFBJ0c/Screenshot-16.jpg',
+      text: 'В задании "Доставить федерации материалы" добавится кнопка для погрузки материала во флот'
     }
   },
-  callbackCondition: () => {
-    return 1;
+  {
+    group: pluginsGroups.tc.id,
+    code: 'calcSellIG',
+    type: 'bool',
+    title: sfui_language.AUTO_CALC_CREDIT_SALE,
+    wndCondition: 'WndTrade',
+    callback: sfui.updateSellCredits,
+    callbackCondition: () => {
+      return getWindow('WndTrade').activetab === "federation-sellresourses";
+    },
+    help: {
+      img: 'https://i.postimg.cc/mZdvCdQc/Screenshot-10.jpg',
+      text: 'У меня 0 (все продал хе-хе), но по факту там автоматически будет выставляться сумма кредитов для продажи (сумма чтоб полностью обнулить доступную продажу)'
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/JnrFBJ0c/Screenshot-16.jpg',
-    text: 'В задании "Доставить федерации материалы" добавится кнопка для погрузки материала во флот'
-  }
-}, {
-  group: pluginsGroups.tc.id,
-  code: 'calcSellIG',
-  type: 'bool',
-  title: sfui_language.AUTO_CALC_CREDIT_SALE,
-  wndCondition: 'WndTrade',
-  callback: sfui.updateSellCredits,
-  callbackCondition: () => {
-    return getWindow('WndTrade').activetab === "federation-sellresourses";
+  {
+    group: pluginsGroups.tc.id,
+    code: 'calcTradeCount',
+    type: 'bool',
+    title: sfui_language.TC_ALL_PRICES,
+    wndCondition: 'WndTrade',
+    callback: sfui.calcTradeCount,
+    callbackCondition: () => {
+      return getWindow('WndTrade').activetab === "main-rates";
+    },
+    help: {
+      img: 'https://i.postimg.cc/gkQ1Bntm/Screenshot-13.jpg',
+      text: 'Сумма всех ставок будет подсчитываться и выводится в отдельном окошке. Приблуда для оценивания продаж всего что выставленно.'
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/mZdvCdQc/Screenshot-10.jpg',
-    text: 'У меня 0 (все продал хе-хе), но по факту там автоматически будет выставляться сумма кредитов для продажи (сумма чтоб полностью обнулить доступную продажу)'
-  }
-}, {
-  group: pluginsGroups.tc.id,
-  code: 'calcTradeCount',
-  type: 'bool',
-  title: sfui_language.TC_ALL_PRICES,
-  wndCondition: 'WndTrade',
-  callback: sfui.calcTradeCount,
-  callbackCondition: () => {
-    return getWindow('WndTrade').activetab === "main-rates";
+  {
+    group: pluginsGroups.tc.id,
+    code: 'toSmallTradeRows',
+    type: 'bool',
+    title: sfui_language.SHRINKING_TC_ROWS,
+    wndCondition: 'WndTrade',
+    callback: sfui.updateTradeRow,
+    callbackCondition: () => {
+      return getWindow('WndTrade').activetab === "main-rates";
+    },
+    help: {
+      img: 'https://i.postimg.cc/mrNqDVLg/Screenshot-11.jpg',
+      text: 'Уменьшает высоту строк торговых стравок, таким образом все ставки умещаются на странице без скролла'
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/gkQ1Bntm/Screenshot-13.jpg',
-    text: 'Сумма всех ставок будет подсчитываться и выводится в отдельном окошке. Приблуда для оценивания продаж всего что выставленно.'
-  }
-}, {
-  group: pluginsGroups.tc.id,
-  code: 'toSmallTradeRows',
-  type: 'bool',
-  title: sfui_language.SHRINKING_TC_ROWS,
-  wndCondition: 'WndTrade',
-  callback: sfui.updateTradeRow,
-  callbackCondition: () => {
-    return getWindow('WndTrade').activetab === "main-rates";
+  {
+    group: pluginsGroups.battle.id,
+    code: 'battleLogTable',
+    type: 'bool',
+    title: sfui_language.ADD_COMBAT_MASH,
+    wndCondition: 'SettingsOnly',
+    callback: () => { },
+    help: {
+      img: 'https://i.postimg.cc/Bn71z1zD/Screenshot-27.jpg',
+      text: 'В просмотре боя будет отрисовываться специальная сетка, отображащая корабли на позициях и другую информацию'
+    }
   },
-  help: {
-    img: 'https://i.postimg.cc/mrNqDVLg/Screenshot-11.jpg',
-    text: 'Уменьшает высоту строк торговых стравок, таким образом все ставки умещаются на странице без скролла'
-  }
-}, {
-  group: pluginsGroups.battle.id,
-  code: 'battleLogTable',
-  type: 'bool',
-  title: sfui_language.ADD_COMBAT_MASH,
-  wndCondition: 'SettingsOnly',
-  callback: () => { },
-  callbackCondition: () => {
-    return 1
-  },
-  help: {
-    img: 'https://i.postimg.cc/Bn71z1zD/Screenshot-27.jpg',
-    text: 'В просмотре боя будет отрисовываться специальная сетка, отображащая корабли на позициях и другую информацию'
-  }
-}, {
-  group: pluginsGroups.battle.id,
-  code: 'allowResizeWndBattle',
-  type: 'bool',
-  title: sfui_language.ALLOW_RESIZE_BATTLE_WINDOW,
-  isAllowMobile: false,
-  wndCondition: 'WndBattle',
-  callback: () => {
-    let battleWindow = getWindow('WndBattle').win;
-    if (!battleWindow)
-      return;
+  {
+    group: pluginsGroups.battle.id,
+    code: 'allowResizeWndBattle',
+    type: 'bool',
+    title: sfui_language.ALLOW_RESIZE_BATTLE_WINDOW,
+    isAllowMobile: false,
+    wndCondition: 'WndBattle',
+    callback: () => {
+      let battleWindow = getWindow('WndBattle').win;
+      if (!battleWindow)
+        return;
 
-    sfui.callResizeWndBattle();
-
-    if (battleWindow.checkEvent('onResizeFinish1'))
-      return;
-
-    battleWindow.allowResize();
-    let dimensions = battleWindow.getDimension();
-    battleWindow.setMinDimension(dimensions[0], dimensions[1]);
-    battleWindow.setMaxDimension(dimensions[0], 'auto');
-    battleWindow.attachEvent('onMaximize', () => {
-      battleWindow.setPosition(battleWindow.x, 0);
       sfui.callResizeWndBattle();
-    });
-    battleWindow.attachEvent('onMinimize', sfui.callResizeWndBattle);
-    battleWindow.attachEvent('onResizeFinish', sfui.callResizeWndBattle);
-    battleWindow.attachEvent('onResizeFinish1', () => { });
+
+      if (battleWindow.checkEvent('onResizeFinish1'))
+        return;
+
+      battleWindow.allowResize();
+      let dimensions = battleWindow.getDimension();
+      battleWindow.setMinDimension(dimensions[0], dimensions[1]);
+      battleWindow.setMaxDimension(dimensions[0], 'auto');
+      battleWindow.attachEvent('onMaximize', () => {
+        battleWindow.setPosition(battleWindow.x, 0);
+        sfui.callResizeWndBattle();
+      });
+      battleWindow.attachEvent('onMinimize', sfui.callResizeWndBattle);
+      battleWindow.attachEvent('onResizeFinish', sfui.callResizeWndBattle);
+      battleWindow.attachEvent('onResizeFinish1', () => { });
+    }
   },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.battle.id,
-  code: 'allowResizeWndControlBattle',
-  type: 'bool',
-  title: sfui_language.ALLOW_RESIZE_SELECT_TARGET_WND,
-  isAllowMobile: false,
-  wndCondition: 'WndControlBattle',
-  callback: () => {
-    let controlBattleWindow = getWindow('WndControlBattle').win;
-    if (!controlBattleWindow)
-      return;
+  {
+    group: pluginsGroups.battle.id,
+    code: 'allowResizeWndControlBattle',
+    type: 'bool',
+    title: sfui_language.ALLOW_RESIZE_SELECT_TARGET_WND,
+    isAllowMobile: false,
+    wndCondition: 'WndControlBattle',
+    callback: () => {
+      let controlBattleWindow = getWindow('WndControlBattle').win;
+      if (!controlBattleWindow)
+        return;
 
-    sfui.callResizeWndControlBattle();
-
-    if (controlBattleWindow.checkEvent('onResizeFinish1'))
-      return;
-
-    controlBattleWindow.allowResize();
-    let dimensions = controlBattleWindow.getDimension();
-    controlBattleWindow.setMinDimension(dimensions[0], dimensions[1]);
-    controlBattleWindow.setMaxDimension(614, 'auto');
-    controlBattleWindow.attachEvent('onMaximize', () => {
-      controlBattleWindow.setPosition(controlBattleWindow.x, 0);
       sfui.callResizeWndControlBattle();
-    });
-    controlBattleWindow.attachEvent('onMinimize', sfui.callResizeWndControlBattle);
-    controlBattleWindow.attachEvent('onResizeFinish', sfui.callResizeWndControlBattle);
-    controlBattleWindow.attachEvent('onResizeFinish1', () => { });
+
+      if (controlBattleWindow.checkEvent('onResizeFinish1'))
+        return;
+
+      controlBattleWindow.allowResize();
+      let dimensions = controlBattleWindow.getDimension();
+      controlBattleWindow.setMinDimension(dimensions[0], dimensions[1]);
+      controlBattleWindow.setMaxDimension(614, 'auto');
+      controlBattleWindow.attachEvent('onMaximize', () => {
+        controlBattleWindow.setPosition(controlBattleWindow.x, 0);
+        sfui.callResizeWndControlBattle();
+      });
+      controlBattleWindow.attachEvent('onMinimize', sfui.callResizeWndControlBattle);
+      controlBattleWindow.attachEvent('onResizeFinish', sfui.callResizeWndControlBattle);
+      controlBattleWindow.attachEvent('onResizeFinish1', () => { });
+    }
   },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.battle.id,
-  code: 'allowResizeWndBattleLogs',
-  type: 'bool',
-  title: sfui_language.ALLOW_RESIZE_BATTLE_WND_ANOTHER,
-  isAllowMobile: false,
-  wndCondition: 'WndBattleLogs',
-  callback: () => {
-    let battleLogsWindow = getWindow('WndBattleLogs').win;
-    if (!battleLogsWindow)
-      return;
+  {
+    group: pluginsGroups.battle.id,
+    code: 'allowResizeWndBattleLogs',
+    type: 'bool',
+    title: sfui_language.ALLOW_RESIZE_BATTLE_WND_ANOTHER,
+    isAllowMobile: false,
+    wndCondition: 'WndBattleLogs',
+    callback: () => {
+      let battleLogsWindow = getWindow('WndBattleLogs').win;
+      if (!battleLogsWindow)
+        return;
 
-    sfui.callResizeWndBattleLogs();
-
-    if (battleLogsWindow.checkEvent('onResizeFinish1'))
-      return;
-
-    battleLogsWindow.allowResize();
-    let dimensions = battleLogsWindow.getDimension();
-    battleLogsWindow.setMinDimension(dimensions[0], dimensions[1]);
-    battleLogsWindow.setMaxDimension(dimensions[0], 'auto');
-    battleLogsWindow.attachEvent('onMaximize', () => {
-      battleLogsWindow.setPosition(battleLogsWindow.x, 0);
       sfui.callResizeWndBattleLogs();
-    });
-    battleLogsWindow.attachEvent('onMinimize', sfui.callResizeWndBattleLogs);
-    battleLogsWindow.attachEvent('onResizeFinish', sfui.callResizeWndBattleLogs);
-    battleLogsWindow.attachEvent('onResizeFinish1', () => { });
+
+      if (battleLogsWindow.checkEvent('onResizeFinish1'))
+        return;
+
+      battleLogsWindow.allowResize();
+      let dimensions = battleLogsWindow.getDimension();
+      battleLogsWindow.setMinDimension(dimensions[0], dimensions[1]);
+      battleLogsWindow.setMaxDimension(dimensions[0], 'auto');
+      battleLogsWindow.attachEvent('onMaximize', () => {
+        battleLogsWindow.setPosition(battleLogsWindow.x, 0);
+        sfui.callResizeWndBattleLogs();
+      });
+      battleLogsWindow.attachEvent('onMinimize', sfui.callResizeWndBattleLogs);
+      battleLogsWindow.attachEvent('onResizeFinish', sfui.callResizeWndBattleLogs);
+      battleLogsWindow.attachEvent('onResizeFinish1', () => { });
+    }
   },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.map.id,
-  code: 'wndSearchCalcSelectedMass',
-  type: 'bool',
-  title: sfui_language.MASS_SELECTED_ASTRO_FIELDS,
-  wndCondition: 'WndSearchMap',
-  help: {
-    img: "https://i.postimg.cc/nLqLpjzC/Screenshot-25.jpg",
-    text: "При выборе полей будет отображатся масса выбранных полей (окно поиска астероидных полей)"
+  {
+    group: pluginsGroups.map.id,
+    code: 'wndSearchCalcSelectedMass',
+    type: 'bool',
+    title: sfui_language.MASS_SELECTED_ASTRO_FIELDS,
+    wndCondition: 'WndSearchMap',
+    help: {
+      img: "https://i.postimg.cc/nLqLpjzC/Screenshot-25.jpg",
+      text: "При выборе полей будет отображатся масса выбранных полей (окно поиска астероидных полей)"
+    },
+    callback: () => {
+      $('#WndSearchMap_planets_totalselectmasslabel').remove();
+      $('#WndSearchMap_planets_totalselectmass').remove();
+      $('#WndSearchMap_planets_totalpages').parent().append(`<span id='WndSearchMap_planets_totalselectmasslabel' class="value_label m2">Масса выбраных полей</span><div data-hint="Масса выбраных полей" id="WndSearchMap_planets_totalselectmass" class="value-n text10 h18 m2" style='padding: 3px;'>0</div>`);
+      $('#WndSearchMap_planets_form div.controls-left-row span.mr4 span.inputCheckBox').parent().attr('onclick', `sfui.WndSearchCalcSelectedMass()`);
+      $(getWindow('WndSearchMap').win).find(`.inputCheckBox`).on('click', sfui.WndSearchCalcSelectedMass);
+    }
   },
-  callback: () => {
-    $('#WndSearchMap_planets_totalselectmasslabel').remove();
-    $('#WndSearchMap_planets_totalselectmass').remove();
-    $('#WndSearchMap_planets_totalpages').parent().append(`<span id='WndSearchMap_planets_totalselectmasslabel' class="value_label m2">Масса выбраных полей</span><div data-hint="Масса выбраных полей" id="WndSearchMap_planets_totalselectmass" class="value-n text10 h18 m2" style='padding: 3px;'>0</div>`);
-    $('#WndSearchMap_planets_form div.controls-left-row span.mr4 span.inputCheckBox').parent().attr('onclick', `sfui.WndSearchCalcSelectedMass()`);
-    $(getWindow('WndSearchMap').win).find(`.inputCheckBox`).on('click', sfui.WndSearchCalcSelectedMass);
-  },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.map.id,
-  code: 'findGGInMap',
-  type: 'bool',
-  title: sfui_language.DISPLAY_MAP_GATE,
-  wndCondition: 'WndStarMapB',
-  help: {
-    img: "https://i.postimg.cc/FF3YN6YT/Screenshot-24.jpg",
-    text: 'При нажатии правой кнопке на карте будет отображен ближайшие гипер врата'
-  },
-  callback: () => {
-    $('#WndStarMapB_map').mousedown(function (e) {
-      setTimeout(() => {
-        if (e.button === 2) {
-          let minDistance = 999999;
-          let minName = 'Undefined!'
-          let posClick = $('#WndStarMapB_rm_menu_coord').text();
-          let x = sfapi.parseIntExt(posClick.split('-')[0]);
-          let y = sfapi.parseIntExt(posClick.split('-')[1]);
-          for (let key in getWindow('WndStarMapB').map.stars) {
-            let eMap = getWindow('WndStarMapB').map.stars[key];
-            if (eMap.isgg) {
-              let oX = sfapi.parseIntExt(eMap.x);
-              let oY = sfapi.parseIntExt(eMap.y);
-              let distance = Math.sqrt(Math.pow(oX - x, 2) + Math.pow(oY - y, 2));
-              if (minDistance > distance) {
-                minDistance = distance;
-                minName = eMap.id;
+  {
+    group: pluginsGroups.map.id,
+    code: 'findGGInMap',
+    type: 'bool',
+    title: sfui_language.DISPLAY_MAP_GATE,
+    wndCondition: 'WndStarMapB',
+    help: {
+      img: "https://i.postimg.cc/FF3YN6YT/Screenshot-24.jpg",
+      text: 'При нажатии правой кнопке на карте будет отображен ближайшие гипер врата'
+    },
+    callback: () => {
+      $('#WndStarMapB_map').mousedown(function (e) {
+        setTimeout(() => {
+          if (e.button === 2) {
+            let minDistance = 999999;
+            let minName = 'Undefined!'
+            let posClick = $('#WndStarMapB_rm_menu_coord').text();
+            let x = sfapi.parseIntExt(posClick.split('-')[0]);
+            let y = sfapi.parseIntExt(posClick.split('-')[1]);
+            for (let key in getWindow('WndStarMapB').map.stars) {
+              let eMap = getWindow('WndStarMapB').map.stars[key];
+              if (eMap.isgg) {
+                let oX = sfapi.parseIntExt(eMap.x);
+                let oY = sfapi.parseIntExt(eMap.y);
+                let distance = Math.sqrt(Math.pow(oX - x, 2) + Math.pow(oY - y, 2));
+                if (minDistance > distance) {
+                  minDistance = distance;
+                  minName = eMap.id;
+                }
+              }
+            }
+            if ($('#ggFindInfo').length === 0) {
+              $('#divPopupMenu').css('height', '80px')
+              $('#divPopupMenu div.controls-center-col-top').append('<div id="ggFindInfo" class="textcontainer center" style="width: 100%; height: 20px; padding-left: 0px; padding-right: 0px">123</div>')
+              if (999999 > minDistance) {
+                $("#ggFindInfo").html(`<span style="font-size: 9px">${minDistance.toFixed(2)}св. ${minName}</span>`)
+              } else {
+                $("#ggFindInfo").html(`<span style="font-size: 9px">---</span>`)
               }
             }
           }
-          if ($('#ggFindInfo').length === 0) {
-            $('#divPopupMenu').css('height', '80px')
-            $('#divPopupMenu div.controls-center-col-top').append('<div id="ggFindInfo" class="textcontainer center" style="width: 100%; height: 20px; padding-left: 0px; padding-right: 0px">123</div>')
-            if (999999 > minDistance) {
-              $("#ggFindInfo").html(`<span style="font-size: 9px">${minDistance.toFixed(2)}св. ${minName}</span>`)
-            } else {
-              $("#ggFindInfo").html(`<span style="font-size: 9px">---</span>`)
-            }
-          }
-        }
-      }, 200)
-    });
+        }, 200)
+      });
+    }
   },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.another.id,
-  code: 'usedAnotherBG',
-  type: 'bool',
-  title: sfui_language.USE_CUSTOM_BG,
-  wndCondition: 'OnLoadScript',
-  callback: sfui.setCustumBG,
-  callbackCondition: () => {
-    return 1;
-  }
-}, {
-  group: pluginsGroups.another.id,
-  code: 'anotherBG',
-  type: 'string',
-  title: sfui_language.LINK_BG,
-  wndCondition: 'SettingsOnly',
-  callback: () => { },
-  callbackCondition: () => {
-    return 1;
-  }
-}, {
-  group: pluginsGroups.another.id,
-  code: 'removeMaxHeightWndNewMessage',
-  type: 'bool',
-  title: sfui_language.OPT_NEW_MSG_WIN,
-  wndCondition: 'OnLoadScript',
-  callback: () => {
-    //console.log($("#WndMessages_hint_messages_form")[0]);
-    setTimeout(function tickMessWnd() {
-      if ($("#divNewMessages").length === 0) {
-        setTimeout(tickMessWnd, 100);
-      } else {
-        $("#divNewMessages")[0].addEventListener("DOMSubtreeModified", () => {
-          if (!$("#divNewMessages").data('refresh')) {
-            $("#divNewMessages").data('refresh', 'await');
-            setTimeout(() => {
-              sfui_redrawNewMesagesWindow();
+  {
+    group: pluginsGroups.another.id,
+    code: 'usedAnotherBG',
+    type: 'bool',
+    title: sfui_language.USE_CUSTOM_BG,
+    wndCondition: 'OnLoadScript',
+    callback: sfui.setCustumBG
+  },
+  {
+    group: pluginsGroups.another.id,
+    code: 'anotherBG',
+    type: 'string',
+    title: sfui_language.LINK_BG,
+    wndCondition: 'SettingsOnly',
+    callback: () => { }
+  },
+  {
+    group: pluginsGroups.another.id,
+    code: 'removeMaxHeightWndNewMessage',
+    type: 'bool',
+    title: sfui_language.OPT_NEW_MSG_WIN,
+    wndCondition: 'OnLoadScript',
+    callback: () => {
+      //console.log($("#WndMessages_hint_messages_form")[0]);
+      setTimeout(function tickMessWnd() {
+        if ($("#divNewMessages").length === 0) {
+          setTimeout(tickMessWnd, 100);
+        } else {
+          $("#divNewMessages")[0].addEventListener("DOMSubtreeModified", () => {
+            if (!$("#divNewMessages").data('refresh')) {
+              $("#divNewMessages").data('refresh', 'await');
               setTimeout(() => {
-                $("#divNewMessages").data('refresh', null);
-              }, 25);
-            }, 1);
-          }
-        });
-        sfui_redrawNewMesagesWindow();
-      }
-    }, 100);
+                sfui_redrawNewMesagesWindow();
+                setTimeout(() => {
+                  $("#divNewMessages").data('refresh', null);
+                }, 25);
+              }, 1);
+            }
+          });
+          sfui_redrawNewMesagesWindow();
+        }
+      }, 100);
+    }
   },
-  callbackCondition: () => {
-    return 1;
-  }
-}, {
-  group: pluginsGroups.another.id,
-  code: 'adLinksParse',
-  type: 'bool',
-  title: sfui_language.ADS_LINKS,
-  wndCondition: 'WndAdversting',
-  callback: () => {
-    setTimeout(() => {
-      let note = $('#WndAdversting_note');
-      let htmlCode = note.html().replace(/(http[s]?:\/\/[^ <]+?)([.,]*?[ <])/g, "<a href='$1' target='_blank' style='color:#eee;'>$1</a>$2");
-      note.html(htmlCode);
-    }, 100);
+  {
+    group: pluginsGroups.another.id,
+    code: 'adLinksParse',
+    type: 'bool',
+    title: sfui_language.ADS_LINKS,
+    wndCondition: 'WndAdversting',
+    callback: () => {
+      setTimeout(() => {
+        let note = $('#WndAdversting_note');
+        let htmlCode = note.html().replace(/(http[s]?:\/\/[^ <]+?)([.,]*?[ <])/g, "<a href='$1' target='_blank' style='color:#eee;'>$1</a>$2");
+        note.html(htmlCode);
+      }, 100);
+    }
   },
-  callbackCondition: () => {
-    return 1;
-  }
-}, {
-  group: pluginsGroups.another.id,
-  code: 'wndTradeParseLink',
-  type: 'bool',
-  title: sfui_language.ADS_LINKS_IN_SC,
-  wndCondition: 'WndTrade',
-  callback: () => {
-    setTimeout(() => {
-      let ad = $('#WndTrade_adversting_content');
-      let htmlCode = ad.html().replace(/(http[s]?:\/\/[^ <]+?)([.,]*?[ <])/g, "<a href='$1' target='_blank' style='color:#eee;'>$1</a>$2");
-      ad.html(htmlCode);
-    }, 100);
+  {
+    group: pluginsGroups.another.id,
+    code: 'wndTradeParseLink',
+    type: 'bool',
+    title: sfui_language.ADS_LINKS_IN_SC,
+    wndCondition: 'WndTrade',
+    callback: () => {
+      setTimeout(() => {
+        let ad = $('#WndTrade_adversting_content');
+        let htmlCode = ad.html().replace(/(http[s]?:\/\/[^ <]+?)([.,]*?[ <])/g, "<a href='$1' target='_blank' style='color:#eee;'>$1</a>$2");
+        ad.html(htmlCode);
+      }, 100);
+    },
+    callbackCondition: () => {
+      return getWindow('WndTrade').activetab === "main-adversting";
+    },
+    help: {
+      img: 'https://i.postimg.cc/6pZFstFR/Screenshot-14.jpg',
+      text: 'Ссылки будут кликабельными и открывать ссылку в новой вкадке барузера'
+    }
   },
-  callbackCondition: () => {
-    return getWindow('WndTrade').activetab === "main-adversting";
+  {
+    group: pluginsGroups.another.id,
+    code: 'shuffleUDInTrade',
+    type: 'bool',
+    title: sfui_language.SORT_UD_SETS_TRADE_FEDERATION,
+    wndCondition: 'WndTrade',
+    callback: sfui.udShuffleTrade
   },
-  help: {
-    img: 'https://i.postimg.cc/6pZFstFR/Screenshot-14.jpg',
-    text: 'Ссылки будут кликабельными и открывать ссылку в новой вкадке барузера'
-  }
-}, {
-  group: pluginsGroups.another.id,
-  code: 'shuffleUDInTrade',
-  type: 'bool',
-  title: sfui_language.SORT_UD_SETS_TRADE_FEDERATION,
-  wndCondition: 'WndTrade',
-  callback: sfui.udShuffleTrade,
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.another.id,
-  code: 'allowResizeWndPlayersChat',
-  type: 'bool',
-  title: sfui_language.ALLOW_RESIZE_CHAT_WND,
-  isAllowMobile: false,
-  wndCondition: 'WndPlayersChat',
-  callback: () => {
-    let chatWindow = getWindow('WndPlayersChat').win;
-    if (!chatWindow)
-      return;
+  {
+    group: pluginsGroups.another.id,
+    code: 'allowResizeWndPlayersChat',
+    type: 'bool',
+    title: sfui_language.ALLOW_RESIZE_CHAT_WND,
+    isAllowMobile: false,
+    wndCondition: 'WndPlayersChat',
+    callback: () => {
+      let chatWindow = getWindow('WndPlayersChat').win;
+      if (!chatWindow)
+        return;
 
-    sfui.callResizeWndPlayersChat();
-
-    if (chatWindow.checkEvent('onResizeFinish1'))
-      return;
-
-    chatWindow.allowResize();
-    let dimensions = chatWindow.getDimension();
-    chatWindow.setMinDimension(dimensions[0], dimensions[1]);
-    chatWindow.setMaxDimension(950, 'auto');
-    chatWindow.attachEvent('onMaximize', () => {
-      chatWindow.setPosition(chatWindow.x, 0);
       sfui.callResizeWndPlayersChat();
-    });
-    chatWindow.attachEvent('onMinimize', sfui.callResizeWndPlayersChat);
-    chatWindow.attachEvent('onResizeFinish', sfui.callResizeWndPlayersChat);
-    chatWindow.attachEvent('onResizeFinish1', () => { });
+
+      if (chatWindow.checkEvent('onResizeFinish1'))
+        return;
+
+      chatWindow.allowResize();
+      let dimensions = chatWindow.getDimension();
+      chatWindow.setMinDimension(dimensions[0], dimensions[1]);
+      chatWindow.setMaxDimension(950, 'auto');
+      chatWindow.attachEvent('onMaximize', () => {
+        chatWindow.setPosition(chatWindow.x, 0);
+        sfui.callResizeWndPlayersChat();
+      });
+      chatWindow.attachEvent('onMinimize', sfui.callResizeWndPlayersChat);
+      chatWindow.attachEvent('onResizeFinish', sfui.callResizeWndPlayersChat);
+      chatWindow.attachEvent('onResizeFinish1', () => { });
+    }
   },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.another.id,
-  code: 'removeTabIndex',
-  type: 'bool',
-  title: sfui_language.REMOVE_DISABLING_TABS,
-  wndCondition: 'SettingsOnly',
-  callback: () => { },
-  callbackCondition: () => {
-    return 1
-  }
-}, {
-  group: pluginsGroups.bottom_panel.id,
-  code: 'addFavoriteBottonInBottom',
-  type: 'bool',
-  title: sfui_language.ADD_FAV_BTN_BOTTOM,
-  wndCondition: 'OnLoadScript',
-  callback: () => {
-    let htmlBtn = `
+  {
+    group: pluginsGroups.another.id,
+    code: 'removeTabIndex',
+    type: 'bool',
+    title: sfui_language.REMOVE_DISABLING_TABS,
+    wndCondition: 'SettingsOnly',
+    callback: () => { }
+  },
+  {
+    group: pluginsGroups.bottom_panel.id,
+    code: 'addFavoriteBottonInBottom',
+    type: 'bool',
+    title: sfui_language.ADD_FAV_BTN_BOTTOM,
+    wndCondition: 'OnLoadScript',
+    callback: () => {
+      let htmlBtn = `
       <div class='buttoncontainer-1 m2'>
       <button tabindex="-1" oncontextmenu="return false;" class="image_btn noselect m2" type="button" data-hint="${sfui_language.TEXT_FAVORITE}" style="width:32px;height:32px;"
         onclick="
@@ -4395,19 +4336,17 @@ sfui.plugins.push({
       </button>
       </div>
       `
-    $("#divBottom .controls").last().children().first().before(htmlBtn);
+      $("#divBottom .controls").last().children().first().before(htmlBtn);
+    }
   },
-  callbackCondition: () => {
-    return 1;
-  }
-}, {
-  group: pluginsGroups.bottom_panel.id,
-  code: 'addCalcBottonInBottom',
-  type: 'bool',
-  title: sfui_language.ADD_CALC_BTN_BOTTOM,
-  wndCondition: 'OnLoadScript',
-  callback: () => {
-    let htmlBtn = `
+  {
+    group: pluginsGroups.bottom_panel.id,
+    code: 'addCalcBottonInBottom',
+    type: 'bool',
+    title: sfui_language.ADD_CALC_BTN_BOTTOM,
+    wndCondition: 'OnLoadScript',
+    callback: () => {
+      let htmlBtn = `
       <div class='buttoncontainer-1 m2'>
       <button tabindex="-1" oncontextmenu="return false;" class="image_btn noselect m2" type="button" data-hint="${sfui_language.CALC_TITLE_WINDOW}" style="width:32px;height:32px;"
         onclick="
@@ -4419,12 +4358,10 @@ sfui.plugins.push({
       </button>
       </div>
       `
-    $("#divBottom .controls").last().children().first().before(htmlBtn);
-  },
-  callbackCondition: () => {
-    return 1;
+      $("#divBottom .controls").last().children().first().before(htmlBtn);
+    }
   }
-});
+]);
 
 sfui.callResizeWndBattle = () => {
   let battleWnd = $(getWindow('WndBattle').win);

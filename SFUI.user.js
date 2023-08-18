@@ -1123,28 +1123,69 @@ sfui.checkboxCustomAction = function (owner) {
   }
 }
 
-// Добавление модуля в скрипт
-sfui.pushPlugin = (plugin) => {
-  if (typeof plugin.code !== 'string'
-    || (plugin.type !== 'bool' && plugin.type !== 'string')
-    || typeof plugin.callback !== 'function')
+sfui.pluginPushError = (text, plugin) => {
+  console.group();
+  console.error('Plugin push error. Plugin code: ' + plugin.code);
+  console.log(text);
+  console.groupEnd();
+}
+
+sfui.pluginDataCheck = (plugin) => {
+  // Код должен быть строкой
+  if (typeof plugin.code !== 'string') {
+    sfui.pluginPushError(`plugin.code !== 'string'`, plugin);
     return false;
+  }
+
+  // Допустимые типы
+  const allowTypes = [
+    'bool',
+    'string',
+    'number', // заготовка для Input.number
+    'list' // заготовка для select
+  ]
+
+  if (allowTypes.indexOf(plugin.type) === -1) {
+    sfui.pluginPushError(plugin.type + " is not allow type", plugin);
+    return false;
+  }
+
+  //callback функцией
+  if (typeof plugin.callback !== 'function') {
+    sfui.pluginPushError("Callback is not a function", plugin);
+    return false;
+  }
 
   if (Array.isArray(plugin.wndCondition)) {
-    if (plugin.wndCondition.length < 1)
+    if (plugin.wndCondition.length < 1) {
+      sfui.pluginPushError("wndCondition is array and wndCondition.length < 1", plugin);
       return false;
-    for (const X of plugin.wndCondition)
-      if (typeof X !== 'string')
+    }
+    for (const X of plugin.wndCondition) {
+      if (typeof X !== 'string') {
+        sfui.pluginPushError(`plugin.wndCondition[${X}] is not a string`, plugin);
         return false;
-  }
-  else if (typeof plugin.wndCondition !== 'string')
+      }
+    }
+  } else if (typeof plugin.wndCondition !== 'string') {
+    sfui.pluginPushError(`plugin.wndCondition is not a string`, plugin);
     return false;
+  }
+}
+
+// Добавление модуля в скрипт
+sfui.pushPlugin = (plugin) => {
+  if (!sfui.pluginDataCheck(plugin)) {
+    //console.error('Plugin ' + plugin.code + ' is not loaded.')
+    return false;
+  }
 
   const allWndConds = Array.isArray(plugin.wndCondition) ? plugin.wndCondition : [plugin.wndCondition];
   for (const wndCond of allWndConds) {
-    if (!Object.hasOwn(sfui.wndBinds, wndCond))
+    if (!Object.hasOwn(sfui.wndBinds, wndCond)) {
       sfui.wndBinds[wndCond] = [];
-    //  Регистрируем плагин как обработчик окна
+    }
+    // Регистрируем плагин как обработчик окна
     sfui.wndBinds[wndCond].push(plugin);
   }
 

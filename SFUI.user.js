@@ -1171,12 +1171,13 @@ sfui.pluginDataCheck = (plugin) => {
     sfui.pluginPushError(`plugin.wndCondition is not a string`, plugin);
     return false;
   }
+
+  return true;
 }
 
 // Добавление модуля в скрипт
 sfui.pushPlugin = (plugin) => {
   if (!sfui.pluginDataCheck(plugin)) {
-    //console.error('Plugin ' + plugin.code + ' is not loaded.')
     return false;
   }
 
@@ -1192,12 +1193,16 @@ sfui.pushPlugin = (plugin) => {
   sfui.plugins.push(plugin);
   return true;
 }
+
 sfui.pushPlugins = (plugins) => {
   if (!Array.isArray(plugins))
     return 0;
   let success = 0;
+
   for (const plugin of plugins)
     success += sfui.pushPlugin(plugin) ? 1 : 0;
+
+  console.log('SFUI loaded plugins:', success);
   return success;
 }
 
@@ -1293,7 +1298,7 @@ function sfui_clearLocalStorage() {
 async function sfui_getUserInfo() {
   // Имитируем открытие окна настроек
   await sfapi.fetch("/?m=windows&w=WndPlayerSettings");
-  await timeout(200);
+  await timeout(100);
   // Открываем первый таб, где есть ник и язык
   let resultTab = await sfapi.fetch("/?m=windows&w=WndPlayerSettings&a=tabload&dest=WndPlayerSettings_main-main&tab=main-main");
   // Парсим и создаем временный блок с содержимым загруженного таба
@@ -1303,17 +1308,16 @@ async function sfui_getUserInfo() {
   };
   new TempDiv('tmpPlayer', res);
   // Достаем язык аккаунта
-  let language = $('#tmpPlayer #WndPlayerSettings_cblang').parent().parent().find('span').first().text();
-  if (language === 'Язык') {
-    language = 'ru';
-  } else {
+  let language = 'ru';
+  if (!$('#tmpPlayer span:contains("Язык")').length) {
     language = 'en';
   }
+
   // Применяем языковой пакет
   sfui_installLanguage(language);
   // Достаем имя аккаунта
   let playerName = $(`#tmpPlayer [data-hint^="${sfui_language.REG_DATE}"] span`)[0].innerText;
-  await timeout(200);
+  await timeout(100);
   // Получаем инфу об учетной записи (раса, рейтинг, имя и т.д.), делается по нику игрока
   let result = await fetch(`/?m=api&a=player&name=${playerName}`);
   result = await result.json();
@@ -1366,15 +1370,19 @@ function sfui_checkMainLoginAndDivMenu() {
   return $("#main-login").length === 0 && $("#divMenu").length > 0;
 }
 
+function sfui_checkMobileDevice() {
+  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    sfui_isMobile = true;
+  } else {
+    sfui_isMobile = false;
+  }
+}
+
 // Инициализируем
 $(document).ready(function () {
   if (sfui_checkMainLoginAndDivMenu()) {
     // Проверям с мобилки играем или нет
-    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-      sfui_isMobile = true;
-    } else {
-      sfui_isMobile = false;
-    }
+    sfui_checkMobileDevice();
 
     // Выносим скрипт в document, это требуется для того
     // что бы вынести скрипт в общий скоп, так как скрипт выполняется в
@@ -1395,9 +1403,9 @@ $(document).ready(function () {
         sfui_showPreloader();
         await sfui_getIcons();
         await sfui_getUserInfo();
-        await timeout(200);
-        sfui_hidePreloader();
         await timeout(100);
+        sfui_hidePreloader();
+        await timeout(50);
         sfui_loadSettings();
         sfui_openPreWindow();
         sfui_printSettings();

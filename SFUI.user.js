@@ -157,9 +157,13 @@ let sfui_language = {
     en: 'Population',
     ru: 'Население'
   },
-  AMMOUNT_BUILD_SHIPS: {
-    en: 'How many ships will the resource last',
-    ru: 'На какое кол-во кораблей хватит ресурса'
+  ENOUGH_RES_FOR_SHIPS: {
+    en: 'Ships amount that the resource last',
+    ru: 'Кол-во кораблей, на которое хватит ресурса'
+  },
+  ENOUGH_RES_FOR_BLDS: {
+    en: 'Buildings amount that the resource last',
+    ru: 'Кол-во построек, на которое хватит ресурса'
   },
   TRLN: {
     en: 'Trln',
@@ -2140,10 +2144,12 @@ sfui.setMaxLevelsBuilds = function () {
 
 //Добавляем в хинт инфу, на сколько хватит построек
 sfui.addMaxBuildsCount = function () {
-  const window_jq = $(getWindow("WndPlanet").win);
+  let window = getWindow("WndPlanet").win;
+  if (window.maxBuildsCounted)
+    return;
+  
   let minBuilds = Number.MAX_SAFE_INTEGER;
-  Array.from(window_jq.find(`button:contains('${sfui_language.BUILD}')`))
-    .forEach((element) => {
+  Array.from($(window).find(`button:contains('${sfui_language.BUILD}')`)).forEach(element => {
       const node = element.nextElementSibling.children[0];
       if (node.innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) === -1
         && node.innerText.indexOf(sfui_language.ORBITAL_PLATFORMS) === -1)
@@ -2156,61 +2162,70 @@ sfui.addMaxBuildsCount = function () {
       let elementForMaxBuilds = null;
       row.cells[2].innerText = cellUse + " (" + cellsGo + ")";
 
-      Array.from($($(element.nextElementSibling).find('tr'))).forEach((e, i) => {
+      Array.from($(element.nextElementSibling).find('tr')).forEach((e, i) => {
         if (i === 0) {
           elementForMaxBuilds = $(e);
           return;
         }
         try {
-          let tdr = $(e).find('td');
-          let name = tdr[1].innerText;
-          let need = tdr[2];
-          let amount = tdr[3];
-          console.log(i, sfapi.parseIntExt(amount.innerText), sfapi.parseIntExt(need.innerText))
-          let minTdr = Math.floor(sfapi.parseIntExt(amount.innerText) / sfapi.parseIntExt(need.innerText));
-          if (name !== sfui_language.POPULATION) {
-            if (minTdr < minBuilds)
-              minBuilds = minTdr;
-          }
+          const tdr = $(e).find('td');
+          const name = tdr[1].innerText;
+          const need = tdr[2];
+          const amount = tdr[3];
+          const minTdr = Math.floor(sfapi.parseIntExt(amount.innerText) / sfapi.parseIntExt(need.innerText));
+          if (name !== sfui_language.POPULATION && minTdr < minBuilds)
+            minBuilds = minTdr;
 
-          $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.AMMOUNT_BUILD_SHIPS}'><span>${sfapi.tls(minTdr)}</span></td>`)
-        } catch (e) {
+          $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
+            <span>${sfapi.tls(minTdr)}</span></td>`);
+        } catch (e) { }
+      });
 
-        }
-      })
-
+      if (elementForMaxBuilds)
+        elementForMaxBuilds.append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
+          <span>${sfapi.tls(minBuilds)}</span></td>`);
     });
+
+    window.maxBuildsCounted = true;
 }
 
 //Добавляем в хинт инфу, на сколько хватит кораблей
 sfui.addMaxShipsCount = function () {
-  Array.from($(getWindow("WndPlanet").win).find(`button:contains('${sfui_language.BUILD}')`)).forEach((element) => {
+  let window = getWindow("WndPlanet").win;
+  if (window.maxShipsCounted)
+    return;
+
+  Array.from($(window).find(`button:contains('${sfui_language.BUILD}')`)).forEach((element) => {
     let minShips = Number.MAX_SAFE_INTEGER;
     let minShipsForNas = Number.MAX_SAFE_INTEGER;
     let elementForMaxShips = null;
 
-    Array.from($($(element.nextElementSibling).find('tr'))).forEach((e, i) => {
+    Array.from($(element.nextElementSibling).find('tr')).forEach((e, i) => {
       if (i === 0) {
         elementForMaxShips = $(e);
         return;
       }
 
-      let tdr = $(e).find('td');
-      let name = tdr[1].innerText;
-      let need = tdr[2];
-      let amount = tdr[3];
-      let minTdr = Math.floor(sfapi.parseIntExt(amount.innerText) / sfapi.parseIntExt(need.innerText));
+      const tdr = $(e).find('td');
+      const name = tdr[1].innerText;
+      const need = tdr[2];
+      const amount = tdr[3];
+      const minTdr = Math.floor(sfapi.parseIntExt(amount.innerText) / sfapi.parseIntExt(need.innerText));
       if (name !== sfui_language.POPULATION) {
         if (minTdr < minShips)
           minShips = minTdr;
       } else if (minTdr < minShipsForNas)
         minShipsForNas = minTdr;
 
-      $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.AMMOUNT_BUILD_SHIPS}'><span>${sfapi.tls(minTdr)}</span></td>`)
-    })
+      $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_SHIPS}'>
+        <span>${sfapi.tls(minTdr)}</span></td>`)
+    });
     if (elementForMaxShips)
-      elementForMaxShips.append(`<td class="value text10 w60" data-hint='${sfui_language.AMMOUNT_BUILD_SHIPS}'><span>${sfapi.tls(minShips)} (${sfapi.tls(minShipsForNas)})</span></td>`)
+      elementForMaxShips.append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_SHIPS}'>
+        <span>${sfapi.tls(minShips)} (${sfapi.tls(minShipsForNas)})</span></td>`);
   });
+
+  window.maxShipsCounted = true;
 }
 
 //Добавляем кнопочки в окно просмотра империи

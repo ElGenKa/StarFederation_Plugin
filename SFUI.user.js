@@ -729,6 +729,10 @@ let sfui_language = {
   DELIVER_TO_PLANETS: {
     en: 'Deliver to the planets',
     ru: 'Развезти по планетам'
+  },
+  ENTER_FOR_MAP_SEARCH: {
+    en: 'Press Enter for search in star map',
+    ru: 'По нажатию Enter искать на звездной карте'
   }
 }
 
@@ -4451,6 +4455,23 @@ sfui.pushPlugins([
       </div>
       `
       $("#divBottom .controls").last().children().first().before(htmlBtn);
+    }
+  }, {
+    group: pluginsGroups.map.id,
+    code: 'enterForSearchMap',
+    type: 'bool',
+    title: sfui_language.ENTER_FOR_MAP_SEARCH,
+    wndCondition: 'WndStarMapB',
+    callback: () => {
+      const inputSearch = $('#WndStarMapB_cbsearch');
+      if (!inputSearch.data('initForSeach')) {
+        inputSearch.data('initForSeach', 'true');
+        inputSearch[0].dhx_combo.DOMelem_input.addEventListener('keypress', (e) => {
+          if (e.which === 13) {
+            $('#WndStarMapB_searchform').next().next().click();
+          }
+        })
+      }
     }
   }
 ]);

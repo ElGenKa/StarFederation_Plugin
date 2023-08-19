@@ -733,6 +733,10 @@ let sfui_language = {
   ENTER_FOR_SEARCH_MAP: {
     en: 'Press Enter for search in star map',
     ru: 'По нажатию Enter искать на звездной карте'
+  },
+  EXT_SMART_COMMANDS: {
+    en: '',
+    ru: ''
   }
 }
 
@@ -2151,46 +2155,46 @@ sfui.addMaxBuildsCount = function () {
   let window = getWindow("WndPlanet").win;
   if (window.maxBuildsCounted)
     return;
-  
+
   let minBuilds = Number.MAX_SAFE_INTEGER;
   Array.from($(window).find(`button:contains('${sfui_language.BUILD}')`)).forEach(element => {
-      const node = element.nextElementSibling.children[0];
-      if (node.innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) === -1
-        && node.innerText.indexOf(sfui_language.ORBITAL_PLATFORMS) === -1)
+    const node = element.nextElementSibling.children[0];
+    if (node.innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) === -1
+      && node.innerText.indexOf(sfui_language.ORBITAL_PLATFORMS) === -1)
+      return;
+
+    const row = node.children[0].rows[0];
+    const cellUse = sfapi.parseIntExt(row.cells[2].innerText);
+    const cellFree = sfapi.parseIntExt(row.cells[3].innerText);
+    const cellsGo = Math.floor(cellFree / cellUse);
+    let elementForMaxBuilds = null;
+    row.cells[2].innerText = cellUse + " (" + cellsGo + ")";
+
+    Array.from($(element.nextElementSibling).find('tr')).forEach((e, i) => {
+      if (i === 0) {
+        elementForMaxBuilds = $(e);
         return;
+      }
+      try {
+        const tdr = $(e).find('td');
+        const name = tdr[1].innerText;
+        const need = tdr[2];
+        const amount = tdr[3];
+        const minTdr = Math.floor(sfapi.parseIntExt(amount.innerText) / sfapi.parseIntExt(need.innerText));
+        if (name !== sfui_language.POPULATION && minTdr < minBuilds)
+          minBuilds = minTdr;
 
-      const row = node.children[0].rows[0];
-      const cellUse = sfapi.parseIntExt(row.cells[2].innerText);
-      const cellFree = sfapi.parseIntExt(row.cells[3].innerText);
-      const cellsGo = Math.floor(cellFree / cellUse);
-      let elementForMaxBuilds = null;
-      row.cells[2].innerText = cellUse + " (" + cellsGo + ")";
-
-      Array.from($(element.nextElementSibling).find('tr')).forEach((e, i) => {
-        if (i === 0) {
-          elementForMaxBuilds = $(e);
-          return;
-        }
-        try {
-          const tdr = $(e).find('td');
-          const name = tdr[1].innerText;
-          const need = tdr[2];
-          const amount = tdr[3];
-          const minTdr = Math.floor(sfapi.parseIntExt(amount.innerText) / sfapi.parseIntExt(need.innerText));
-          if (name !== sfui_language.POPULATION && minTdr < minBuilds)
-            minBuilds = minTdr;
-
-          $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
+        $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
             <span>${sfapi.tls(minTdr)}</span></td>`);
-        } catch (e) { }
-      });
-
-      if (elementForMaxBuilds)
-        elementForMaxBuilds.append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
-          <span>${sfapi.tls(minBuilds)}</span></td>`);
+      } catch (e) { }
     });
 
-    window.maxBuildsCounted = true;
+    if (elementForMaxBuilds)
+      elementForMaxBuilds.append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
+          <span>${sfapi.tls(minBuilds)}</span></td>`);
+  });
+
+  window.maxBuildsCounted = true;
 }
 
 //Добавляем в хинт инфу, на сколько хватит кораблей
@@ -3725,7 +3729,7 @@ sfui.pushPlugins([
       $(getWindow('WndFleet').win).find('[id^="WndFleet_comands_topage"].text10').css('width', '10px').removeClass('w20');
       $('.WndFleetSeparatorToSmartFlyList').remove();
       $('.smartFlyBtn').remove();
-      let container = $('#WndFleet_container div.controls-left-row.controlbox');
+      const container = $('#WndFleet_container div.controls-left-row.controlbox');
       container.append(`<div class="vsep m2 h100p WndFleetSeparatorToSmartFlyList"></div>`);
       for (let i = 0; i < 6; i++) {
         container.append(`<button oncontextmenu="sfui.showSmartFlyListEdit('${i}', 2); return false;" id='SmartFlyList_${i}u' data-hint='Загрузить командный лист (уникальный для флота). ПКМ что бы изменить. Лист будет добавлен.' type='button' class='image_btn noselect smartFlyBtn' style='width:20px;height:20px;'><img alt="" oncontextmenu="return false;" width=16 height=16 class="noselect" border="0" src="/images/icons/arrrow_dn_16.png"></button>`);
@@ -3809,6 +3813,49 @@ sfui.pushPlugins([
           console.warn(e);
         }
       }
+    },
+    callbackCondition: () => {
+      return getWindow('WndFleet').activetab === 'main-comands';
+    }
+  },
+  {
+    group: pluginsGroups.fleet.id,
+    code: 'WndFleetExtSmartCommands',
+    type: 'bool',
+    title: sfui_language.EXT_SMART_COMMANDS,
+    wndCondition: 'WndFleet',
+    callback: () => {
+      if (!$('.WndFleetSeparatorToSmartCommands').length) {
+        const container = $('#WndFleet_container div.controls-left-row.controlbox');
+        container.append(`<div class="vsep m2 h100p WndFleetSeparatorToSmartCommands"></div>`);
+
+        const extButton = document.createElement('button');
+        extButton.classList.add(['image_btn', 'noselect']);
+        extButton.style.width = '20px';
+        extButton.style.height = '20px';
+        extButton.id = 'fleetSmartExtButton';
+        extButton.setAttribute('oncontextmenu', 'return false');
+        extButton.onclick = () => {
+          $('#fleetSmartExtButtonContext').toggleClass('contextActive');
+        }
+
+        const extButtonImg = document.createElement('img');
+        extButtonImg.setAttribute('width', '16');
+        extButtonImg.setAttribute('height', '16');
+        extButtonImg.setAttribute('border', '0');
+        extButtonImg.setAttribute('oncontextmenu', 'return false');
+        extButtonImg.classList.add('noselect');
+        extButtonImg.setAttribute('src', '/images/icons/i_fleets_16.png');
+
+        const contextMenuExt = document.createElement('div');
+        contextMenuExt.classList.add('contextMenuExt');
+
+        $(extButton).append(extButtonImg);
+        container.append(extButton);
+        container.append(contextMenuExt);
+      }
+      //const container = $('#WndFleet_container div.controls-left-row.controlbox');
+      //container.append(`<div class="vsep m2 h100p WndFleetSeparatorToSmartFlyList"></div>`);
     },
     callbackCondition: () => {
       return getWindow('WndFleet').activetab === 'main-comands';
@@ -10209,4 +10256,270 @@ sfapi.planet = {
   getUsedOrbitalSize: () => {
     return sfapi.parseIntExt($("#WndPlanet_pp_obsize").text());
   }
+}
+
+sfdata.attackTypes = {
+  ALL: 0,
+  PLAYER: 1,
+  ALLIANCE: 2
+}
+
+sfapi.fleet = {
+  /**
+   * Команда патруля
+   * @param time number or string. If number that 00:TIME:00
+   * @param isAttack true or false.
+   * @return {Promise<boolean>} true is success and false is error
+   */
+  patrol: async (time, isAttack = false) => {
+    if (Number.isInteger(time)) {
+      time = `00:${time}:00`;
+    } else if (!time.isString()) {
+      return false;
+    }
+    const wndFleet = getWindow('WndFleet');
+    wndFleet.start_load();
+
+    const opt = {
+      "method": 'POST',
+      "body": new URLSearchParams({
+        idcmd: 2,
+        icmd: 'new',
+        'data[time]': time,
+        'data[isatack]': isAttack
+      }).toString()
+    }
+
+    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
+    res = await res.text();
+    ajax_resp(res, wndFleet.on_loadcontent)
+    return true;
+  },
+
+  /**
+   * Команда расформировки
+   * @return {Promise<boolean>}
+   */
+  disband: async () => {
+    const wndFleet = getWindow('WndFleet');
+    wndFleet.start_load();
+
+    const opt = {
+      "method": 'POST',
+      "body": new URLSearchParams({
+        idcmd: 38,
+        icmd: 'new'
+      }).toString()
+    }
+
+    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
+    res = await res.text();
+    ajax_resp(res, wndFleet.on_loadcontent)
+    return true;
+  },
+
+  /**
+   * Лечь в дрейф
+   * @return {Promise<boolean>}
+   */
+  drifting: async () => {
+    const wndFleet = getWindow('WndFleet');
+    wndFleet.start_load();
+
+    const opt = {
+      "method": 'POST',
+      "body": new URLSearchParams({
+        idcmd: 19,
+        icmd: 'new'
+      }).toString()
+    }
+
+    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
+    res = await res.text();
+    ajax_resp(res, wndFleet.on_loadcontent)
+    return true;
+  },
+
+  /**
+   * Атаковать игроков на координатах
+   * @param attackType - see sfdata.attackTypes - allow variables: ALL, PLAYER, ALLIANCE
+   * @param attackParam - if selected PLAYER or ALLIANCE
+   * @return {Promise<boolean>}
+   */
+  attack: async (attackType, attackParam = '') => {
+    const wndFleet = getWindow('WndFleet');
+    wndFleet.start_load();
+
+    if (!Number.isInteger(attackType)) {
+      attackType = parseInt(attackType);
+    }
+
+    if (attackType < 0 && attackType > 2) {
+      return false
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": new URLSearchParams({
+        idcmd: 31,
+        icmd: 'new',
+        'data[atype]': attackType,
+        'data[player]': attackParam
+      }).toString()
+    }
+
+    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
+    res = await res.text();
+    ajax_resp(res, wndFleet.on_loadcontent)
+    return true;
+  },
+
+  repair: async () => {
+    const wndFleet = getWindow('WndFleet');
+    wndFleet.start_load();
+
+    const opt = {
+      "method": 'POST',
+      "body": new URLSearchParams({
+        idcmd: 17,
+        icmd: 'new'
+      }).toString()
+    }
+
+    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
+    res = await res.text();
+    ajax_resp(res, wndFleet.on_loadcontent)
+    return true;
+  },
+
+  fastRepair: async () => {
+    const wndFleet = getWindow('WndFleet');
+    wndFleet.start_load();
+
+    const opt = {
+      "method": 'POST',
+      "body": new URLSearchParams({
+        idcmd: 36,
+        icmd: 'new'
+      }).toString()
+    }
+
+    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
+    res = await res.text();
+    ajax_resp(res, wndFleet.on_loadcontent)
+    return true;
+  },
+
+  /**
+   * Полет
+   * @param target
+   * @param drifting
+   * @param auto
+   * @param securegate
+   * @return {Promise<boolean>}
+   */
+  fly: async (target, drifting = false, auto = true, securegate = true) => {
+    const wndFleet = getWindow('WndFleet');
+    wndFleet.start_load();
+
+    if (!target.isString() || target.length < 3)
+      return false;
+
+    if (typeof drifting !== 'boolean')
+      drifting = false;
+
+    if (typeof auto !== 'boolean')
+      auto = true;
+
+    if (typeof securegate !== 'boolean')
+      securegate = true;
+
+    const opt = {
+      "method": 'POST',
+      "body": new URLSearchParams({
+        idcmd: 4,
+        icmd: 'new',
+        'data[dest]': target,
+        'data[stopnofound]': drifting,
+        'data[auto]': auto,
+        'data[securegate]': securegate
+      }).toString()
+    }
+
+    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
+    res = await res.text();
+    ajax_resp(res, wndFleet.on_loadcontent)
+    return true;
+  },
+
+  /**
+   * Гипер переход
+   * @param target
+   * @param drifting
+   * @return {Promise<boolean>}
+   */
+  hyperFly: async (target, drifting = false) => {
+    const wndFleet = getWindow('WndFleet');
+    wndFleet.start_load();
+
+    if (!target.isString() || target.length < 3)
+      return false;
+
+    if (typeof drifting !== 'boolean')
+      drifting = false;
+
+    const opt = {
+      "method": 'POST',
+      "body": new URLSearchParams({
+        idcmd: 13,
+        icmd: 'new',
+        'data[dest]': target,
+        'data[stopnofound]': drifting,
+      }).toString()
+    }
+
+    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
+    res = await res.text();
+    ajax_resp(res, wndFleet.on_loadcontent)
+    return true;
+  },
+
+  /**
+   *
+   * @param target
+   * @param engine true is jump engine and false is AD
+   * @return {Promise<boolean>}
+   */
+  jump: async (target, engine = true) => {
+    const wndFleet = getWindow('WndFleet');
+    wndFleet.start_load();
+
+    if (!target.isString() || target.length < 3)
+      return false;
+
+    if (typeof engine !== 'boolean')
+      engine = true;
+
+    if (engine)
+      engine = 'engine';
+    else
+      engine = 'ad';
+
+    const opt = {
+      "method": 'POST',
+      "body": new URLSearchParams({
+        idcmd: 14,
+        icmd: 'new',
+        'data[dest]': target,
+        'data[jumpwith]': engine
+      }).toString()
+    }
+
+    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
+    res = await res.text();
+    ajax_resp(res, wndFleet.on_loadcontent)
+    return true;
+  },
+
+
 }

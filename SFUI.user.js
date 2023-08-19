@@ -730,7 +730,7 @@ let sfui_language = {
     en: 'Deliver to the planets',
     ru: 'Развезти по планетам'
   },
-  ENTER_FOR_MAP_SEARCH: {
+  ENTER_FOR_SEARCH_MAP: {
     en: 'Press Enter for search in star map',
     ru: 'По нажатию Enter искать на звездной карте'
   }
@@ -4460,7 +4460,7 @@ sfui.pushPlugins([
     group: pluginsGroups.map.id,
     code: 'enterForSearchMap',
     type: 'bool',
-    title: sfui_language.ENTER_FOR_MAP_SEARCH,
+    title: sfui_language.ENTER_FOR_SEARCH_MAP,
     wndCondition: 'WndStarMapB',
     callback: () => {
       const inputSearch = $('#WndStarMapB_cbsearch');

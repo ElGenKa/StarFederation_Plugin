@@ -834,9 +834,7 @@ sfapi.wrapToGameValue = (value) => {
     return `<span data-hint="${locValue}" class="v-norm">${locValue}</span>`;
 
   const valueParts = sfapi.toGameValueStr(value).split('.');
-  return `<span data-hint="${locValue}" class="v-norm">${valueParts[0]}.</span>\
-    <span data-hint="${locValue}" class="v-norm-dec">${valueParts[1]}\
-    <span data-hint="${locValue}" class="v-norm"> ${sfui_language.TRLN}</span></span>`;
+  return `<span data-hint="${locValue}" class="v-norm">${valueParts[0]}.</span><span data-hint="${locValue}" class="v-norm-dec">${valueParts[1]}<span data-hint="${locValue}" class="v-norm"> ${sfui_language.TRLN}</span></span>`;
 }
 sfui.sumAndWrapGameInts = (value1, value2) => {
   const newValue = sfapi.parseIntExt(value1) + sfapi.parseIntExt(value2);
@@ -2296,37 +2294,38 @@ sfui.resAnimateChange = (wnd, delayMS) => {
   else return;
 
   Array.from(rows).forEach((e, i) => {
-    const targetValues = $(e).find('td');
-    let amountData = '';
-    let massData = '';
-    let expenseData = '';
+    const cellsData = $(e).find('td');
+    let amountValue = '';
+    let massValue = '';
+    let expenseValue = '';
 
-    const span_Expense_jq = targetValues.eq(5).find('span.v-norm');
-    expenseData = span_Expense_jq.data('hint') ?? targetValues[5].innerText;
-
-    const expenseVal = sfapi.parseFloatExt(expenseData) / 3600 * (delayMS / 1000);
+    const expenseData_jq = cellsData.eq(5);
+    expenseValue = expenseData_jq.find('span.v-norm').data('hint') ?? cellsData[5].innerText;
+    const expenseVal = sfapi.parseFloatExt(expenseValue) / 3600 * (delayMS / 1000);
     if (!expenseVal)
       return;
 
-    const span_Amount_jq = targetValues.eq(3).find('span.v-norm');
+    const amountData_jq = cellsData.eq(3);
+    const span_Amount_jq = amountData_jq.find('span.v-norm');
     if (span_Amount_jq.data('hint'))
-      amountData = span_Amount_jq[0].dataset.hint ?? span_Amount_jq[1].dataset.hint
+      amountValue = span_Amount_jq[0].dataset.hint ?? span_Amount_jq[1].dataset.hint
     else
-      amountData = targetValues[3].innerText;
+      amountValue = cellsData[3].innerText;
 
-    const span_Mass_jq = targetValues.eq(4).find('span.v-norm');
+    const massData_jq = cellsData.eq(4);
+    const span_Mass_jq = cellsData.eq(4).find('span.v-norm');
     if (span_Mass_jq.data('hint'))
-      massData = span_Mass_jq[0].dataset.hint ?? span_Mass_jq[1].dataset.hint;
+      massValue = span_Mass_jq[0].dataset.hint ?? span_Mass_jq[1].dataset.hint;
     else
-      massData = targetValues[4].innerText;
+      massValue = cellsData[4].innerText;
 
-    const newAmountVal = Math.round(sfapi.parseFloatExt(amountData) + expenseVal);
-    const massRate = Math.round(sfapi.parseFloatExt(massData) / sfapi.parseFloatExt(amountData));
-    span_Amount_jq.html(sfapi.wrapToGameValue(newAmountVal));
-    span_Amount_jq.css('pointerEvents', 'none');
-    span_Mass_jq.html(sfapi.wrapToGameValue(massRate * newAmountVal));
-    span_Mass_jq.css('pointerEvents', 'none');
-    span_Expense_jq.css('pointerEvents', 'none');
+    const newAmountValue = Math.round(sfapi.parseFloatExt(amountValue) + expenseVal);
+    const massRate = Math.round(sfapi.parseFloatExt(massValue) / sfapi.parseFloatExt(amountValue));
+    amountData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(newAmountValue));
+    amountData_jq.children('span').eq(0).css('pointerEvents', 'none');
+    massData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(massRate * newAmountValue));
+    massData_jq.children('span').eq(0).css('pointerEvents', 'none');
+    expenseData_jq.children('span').eq(0).css('pointerEvents', 'none');
   });
 }
 

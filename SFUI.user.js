@@ -2154,22 +2154,27 @@ sfui.setMaxLevelsBuilds = function () {
 
 //Добавляем в хинт инфу, на сколько хватит построек
 sfui.addMaxBuildsCount = function () {
-  if ($('.addMaxBuildsCount').length > 0)
-    $('.addMaxBuildsCount').remove();
-  let window = getWindow("WndPlanet").win;
-  let minBuilds = Number.MAX_SAFE_INTEGER;
-  Array.from($(window).find(`button:contains('${sfui_language.BUILD}')`)).forEach(element => {
+  const window = getWindow("WndPlanet");
+  const parentNode_jq = $(window.container).find('#WndPlanet_buildings_list').last();
+  if (parentNode_jq.length < 1)
+    return;
+  if (parentNode_jq[0].dataset.maxBuildsCounted)
+    return;
+
+  const buildButtons_jq = parentNode_jq.find(`button:contains('${sfui_language.BUILD}')`);
+  Array.from(buildButtons_jq).forEach(element => {
     const node = element.nextElementSibling.children[0];
     if (node.innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) === -1
       && node.innerText.indexOf(sfui_language.ORBITAL_PLATFORMS) === -1)
       return;
-    const row = node.children[0].rows[0];
+    let row = node.children[0].rows[0];
     const cellUse = sfapi.parseIntExt(row.cells[2].innerText);
     const cellFree = sfapi.parseIntExt(row.cells[3].innerText);
     const cellsGo = Math.floor(cellFree / cellUse);
     let elementForMaxBuilds = null;
     row.cells[2].innerText = cellUse + " (" + cellsGo + ")";
 
+    let minBuilds = Number.MAX_SAFE_INTEGER;
     Array.from($(element.nextElementSibling).find('tr')).forEach((e, i) => {
       if (i === 0) {
         elementForMaxBuilds = $(e);
@@ -2184,15 +2189,26 @@ sfui.addMaxBuildsCount = function () {
         if (name !== sfui_language.POPULATION && minTdr < minBuilds)
           minBuilds = minTdr;
 
-        $(e).append(`<td class="value text10 w60 addMaxBuildsCount" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
-            <span >${sfapi.tls(minTdr)}</span></td>`);
+        let newCell = document.createElement('td');
+        newCell.classList.add('value', 'text10', 'w60');
+        newCell.dataset.hint = `${sfui_language.ENOUGH_RES_FOR_BLDS}`;
+        newCell.appendChild(document.createTextNode(`${sfapi.tls(minTdr)}`));
+        e.appendChild(newCell);
       } catch (e) { }
     });
 
-    if (elementForMaxBuilds)
-      elementForMaxBuilds.append(`<td class="value text10 w60 addMaxBuildsCount" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
-          <span>${sfapi.tls(minBuilds)}</span></td>`);
+    if (!elementForMaxBuilds)
+      return;
+
+    let newCell = document.createElement('td');
+    newCell.classList.add('value', 'text10', 'w60');
+    newCell.dataset.hint = `${sfui_language.ENOUGH_RES_FOR_BLDS}`;
+    newCell.setAttribute('rowspan', '2');
+    newCell.appendChild(document.createTextNode(`${sfapi.tls(minBuilds)}`));
+    elementForMaxBuilds.appendChild(newCell);
   });
+
+  parentNode_jq[0].dataset.maxBuildsCounted = true;
 }
 
 //Добавляем в хинт инфу, на сколько хватит кораблей
@@ -2223,11 +2239,11 @@ sfui.addMaxShipsCount = function () {
       } else if (minTdr < minShipsForNas)
         minShipsForNas = minTdr;
 
-      $(e).append(`<td class="value text10 w60 addMaxShipsCount" data-hint='${sfui_language.ENOUGH_RES_FOR_SHIPS}'>
+      $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_SHIPS}'>
         <span>${sfapi.tls(minTdr)}</span></td>`)
     });
     if (elementForMaxShips)
-      elementForMaxShips.append(`<td class="value text10 w60 addMaxShipsCount" data-hint='${sfui_language.ENOUGH_RES_FOR_SHIPS}'>
+      elementForMaxShips.append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_SHIPS}'>
         <span>${sfapi.tls(minShips)} (${sfapi.tls(minShipsForNas)})</span></td>`);
   });
 

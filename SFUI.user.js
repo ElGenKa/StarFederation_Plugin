@@ -2154,17 +2154,15 @@ sfui.setMaxLevelsBuilds = function () {
 
 //Добавляем в хинт инфу, на сколько хватит построек
 sfui.addMaxBuildsCount = function () {
-  let window = getWindow("WndPlanet").win;
-  if (window.maxBuildsCounted)
+  if ($('.addMaxBuildsCount').length > 0)
     return;
-
+  let window = getWindow("WndPlanet").win;
   let minBuilds = Number.MAX_SAFE_INTEGER;
   Array.from($(window).find(`button:contains('${sfui_language.BUILD}')`)).forEach(element => {
     const node = element.nextElementSibling.children[0];
     if (node.innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) === -1
       && node.innerText.indexOf(sfui_language.ORBITAL_PLATFORMS) === -1)
       return;
-
     const row = node.children[0].rows[0];
     const cellUse = sfapi.parseIntExt(row.cells[2].innerText);
     const cellFree = sfapi.parseIntExt(row.cells[3].innerText);
@@ -2187,7 +2185,7 @@ sfui.addMaxBuildsCount = function () {
           minBuilds = minTdr;
 
         $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
-            <span>${sfapi.tls(minTdr)}</span></td>`);
+            <span class="addMaxBuildsCount">${sfapi.tls(minTdr)}</span></td>`);
       } catch (e) { }
     });
 
@@ -2195,8 +2193,6 @@ sfui.addMaxBuildsCount = function () {
       elementForMaxBuilds.append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
           <span>${sfapi.tls(minBuilds)}</span></td>`);
   });
-
-  window.maxBuildsCounted = true;
 }
 
 //Добавляем в хинт инфу, на сколько хватит кораблей

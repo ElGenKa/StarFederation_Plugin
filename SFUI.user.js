@@ -761,6 +761,10 @@ const pluginsGroups = Object.freeze({
   another: { id: 'another', name: { en: 'Another', ru: 'Другое' } },
 });
 
+async function fleetFetch(url, opt, queryOnly) {
+  return await sfapi.fleet.fleetFetch(url, opt, queryOnly)
+}
+
 sfapi.objectToBody = (obj) => {
   return new URLSearchParams(obj).toString();
 }
@@ -1357,6 +1361,7 @@ function sfui_initDocumentScript() {
   document.sfui_language = sfui_language;
   document.sfui_formatTimeFromHours = sfui_formatTimeFromHours;
   document.TRLN = TRLN;
+  document.fleetFetch = fleetFetch;
 }
 
 function sfui_initWindowScript() {
@@ -1378,6 +1383,7 @@ function sfui_initWindowScript() {
   window.sfui_language = document.sfui_language;
   window.sfui_formatTimeFromHours = document.sfui_formatTimeFromHours;
   window.TRLN = document.TRLN;
+  window.fleetFetch = document.fleetFetch;
   `;
   document.body.append(newScript);
 }
@@ -10289,16 +10295,12 @@ class storageItem {
   }
 }
 
-async function fleetFetch(url, opt, queryOnly) {
-  return await sfapi.fleet.fleetFetch(url, opt, queryOnly)
-}
-
 sfapi.fleet = {
   /**
    *
-   * @param url
-   * @param opt
-   * @param queryOnly
+   * @param {string} url
+   * @param {{method: string, body: string}} opt
+   * @param {boolean} queryOnly
    * @return {Promise<boolean>}
    */
   fleetFetch: async (url, opt, queryOnly) => {
@@ -10323,12 +10325,12 @@ sfapi.fleet = {
 
   /**
    * Команда патруля
-   * @param time number or string. If number that 00:TIME:00
-   * @param isAttack true or false.
-   * @param queryOnly
+   * @param {number|string} time number or string. If number that 00:TIME:00
+   * @param {boolean} isAttack true or false.
+   * @param {boolean} queryOnly
    * @return {Promise<boolean>} true is success and false is error
    */
-  patrol: async (time, isAttack = false, queryOnly = false) => {
+  patrol: async (time = '1:00:00', isAttack = false, queryOnly = false) => {
     if (Number.isInteger(time)) {
       time = `00:${time}:00`;
     } else if (typeof time !== 'string') {
@@ -10352,7 +10354,7 @@ sfapi.fleet = {
 
   /**
    * Команда расформировки
-   * @param queryOnly
+   * @param {boolean} queryOnly
    * @return {Promise<boolean>}
    */
   disband: async () => {
@@ -10371,7 +10373,7 @@ sfapi.fleet = {
 
   /**
    * Лечь в дрейф
-   * @param queryOnly
+   * @param {boolean} queryOnly
    * @return {Promise<boolean>}
    */
   drifting: async (queryOnly = false) => {
@@ -10390,9 +10392,9 @@ sfapi.fleet = {
 
   /**
    * Атаковать игроков на координатах
-   * @param attackType - see sfdata.attackTypes - allow variables: ALL, PLAYER, ALLIANCE
-   * @param attackParam - if selected PLAYER or ALLIANCE
-   * @param queryOnly
+   * @param {number} attackType - see sfdata.attackTypes - allow variables: ALL, PLAYER, ALLIANCE
+   * @param {string} attackParam - if selected PLAYER or ALLIANCE
+   * @param {boolean} queryOnly
    * @return {Promise<boolean>}
    */
   attack: async (attackType, attackParam = '', queryOnly = false) => {
@@ -10421,7 +10423,7 @@ sfapi.fleet = {
 
   /**
    * Ремонт
-   * @param queryOnly
+   * @param {boolean} queryOnly
    * @return {Promise<boolean>}
    */
   repair: async (queryOnly = false) => {
@@ -10440,7 +10442,7 @@ sfapi.fleet = {
 
   /**
    * Быстрый ремонт
-   * @param queryOnly
+   * @param {boolean} queryOnly
    * @return {Promise<boolean>}
    */
   fastRepair: async (queryOnly = false) => {
@@ -10459,11 +10461,11 @@ sfapi.fleet = {
 
   /**
    * Полет
-   * @param target
-   * @param drifting
-   * @param auto
-   * @param securegate
-   * @param queryOnly
+   * @param {string} target
+   * @param {boolean} drifting
+   * @param {boolean} auto
+   * @param {boolean} securegate
+   * @param {boolean} queryOnly
    * @return {Promise<boolean>}
    */
   fly: async (target, drifting = false, auto = true, securegate = true, queryOnly = false) => {
@@ -10498,9 +10500,9 @@ sfapi.fleet = {
 
   /**
    * Гипер переход
-   * @param target
-   * @param drifting
-   * @param queryOnly
+   * @param {string} target
+   * @param {boolean} drifting
+   * @param {boolean} queryOnly
    * @return {Promise<boolean>}
    */
   hyperFly: async (target, drifting = false, queryOnly = false) => {
@@ -10527,9 +10529,9 @@ sfapi.fleet = {
 
   /**
    *
-   * @param target
-   * @param engine true is jump engine and false is AD
-   * @param queryOnly
+   * @param {string} target
+   * @param {boolean} engine true is jump engine and false is AD
+   * @param {boolean} queryOnly
    * @return {Promise<boolean>}
    */
   jump: async (target, engine = true, queryOnly = false) => {
@@ -10594,6 +10596,12 @@ sfapi.fleet = {
     return await fleetFetch(null, opt, queryOnly);
   },
 
+  /**
+   * Выгрузить
+   * @param {Array.<storageItem>} arrayStorageItems
+   * @param {boolean} queryOnly
+   * @return {Promise<boolean|*>}
+   */
   unload: async (arrayStorageItems = [], queryOnly = false) => {
     if (!Array.isArray(arrayStorageItems) || arrayStorageItems.length === 0)
       return false;
@@ -10609,6 +10617,143 @@ sfapi.fleet = {
         body[itemData[0]] = itemData[1];
       }
     }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Переработка
+   * @param {boolean} restartonend
+   * @param {boolean} stopnofound
+   * @param {Array.<Number>} arrResp
+   * @param {boolean} queryOnly
+   * @return {Promise<void>}
+   */
+  mine: async (restartonend = true, stopnofound = false, arrResp = [], queryOnly = false) => {
+    if (arrResp.length === 0) {
+      arrResp = new Array(18).fill(100);
+    } else {
+      for (let i = 0; i < 18; i++) {
+        if (arrResp[i]) {
+          if (arrResp[i] > 100 && arrResp[i] < 0)
+            arrResp[i] = 0;
+        } else {
+          arrResp[i] = 0;
+        }
+      }
+    }
+
+    const body = {
+      idcmd: 8,
+      icmd: 'new',
+      'data[restartonend]': restartonend,
+      'data[stopnofound]': stopnofound,
+    }
+
+    for (let i = 0; i < 18; i++) {
+      body[`data[resp][${i + 1}]`] = arrResp[i];
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Арх раскопки
+   * @param {boolean} stopnofound
+   * @param {number} cicles
+   * @param {boolean} queryOnly
+   * @return {Promise<void>}
+   */
+  arch: async (stopnofound = false, cicles = 1, queryOnly = false) => {
+    const body = {
+      idcmd: 15,
+      icmd: 'new',
+      'data[stopnofound]': stopnofound,
+      'data[cicles]': cicles,
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Геологоразведка
+   * @param {boolean} queryOnly
+   * @return {Promise<void>}
+   */
+  geo: async (queryOnly = false) => {
+    const body = {
+      idcmd: 7,
+      icmd: 'new',
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Монтажные работы
+   * @param {number|string} time
+   * @param {boolean} queryOnly
+   * @return {Promise<boolean|*>}
+   */
+  montageJob: async (time = '1:00:00', queryOnly = false) => {
+    if (Number.isInteger(time)) {
+      time = `00:${time}:00`;
+    } else if (typeof time !== 'string') {
+      return false;
+    }
+
+    const body = {
+      idcmd: 2,
+      icmd: 'new',
+      'data[time]': time,
+    };
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Ремонтные работы
+   * @param {number|string} time
+   * @param {boolean} queryOnly
+   * @return {Promise<boolean|*>}
+   */
+  repairJob: async (time = '1:00:00', queryOnly = false) => {
+    if (Number.isInteger(time)) {
+      time = `00:${time}:00`;
+    } else if (typeof time !== 'string') {
+      return false;
+    }
+
+    const body = {
+      idcmd: 37,
+      icmd: 'new',
+      'data[time]': time,
+    };
 
     const opt = {
       "method": 'POST',

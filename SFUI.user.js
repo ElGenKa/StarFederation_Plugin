@@ -2219,18 +2219,22 @@ sfui.addMaxBuildsCount = function () {
 
 //Добавляем в хинт инфу, на сколько хватит кораблей
 sfui.addMaxShipsCount = function () {
-  let window = getWindow("WndPlanet").win;
-  if ($('.addMaxShipsCount').length > 0)
-    $('.addMaxShipsCount').remove();
+  const window = getWindow("WndPlanet");
+  const parentNode_jq = $(window.container).find('#WndPlanet_od_projects_content').last();
+  if (parentNode_jq.length < 1)
+    return;
+  if (parentNode_jq[0].dataset.maxShipsCounted)
+    return;
 
-  Array.from($(window).find(`button:contains('${sfui_language.BUILD}')`)).forEach((element) => {
+  const buildButtons_jq = parentNode_jq.find(`button:contains('${sfui_language.BUILD}')`);
+  Array.from(buildButtons_jq).forEach((element) => {
     let minShips = Number.MAX_SAFE_INTEGER;
     let minShipsForNas = Number.MAX_SAFE_INTEGER;
     let elementForMaxShips = null;
 
     Array.from($(element.nextElementSibling).find('tr')).forEach((e, i) => {
       if (i === 0) {
-        elementForMaxShips = $(e);
+        elementForMaxShips = e;
         return;
       }
 
@@ -2245,14 +2249,25 @@ sfui.addMaxShipsCount = function () {
       } else if (minTdr < minShipsForNas)
         minShipsForNas = minTdr;
 
-      $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_SHIPS}'>
-        <span>${sfapi.tls(minTdr)}</span></td>`)
+      let newCell = document.createElement('td');
+      newCell.classList.add('value', 'text10', 'w60');
+      newCell.dataset.hint = `${sfui_language.ENOUGH_RES_FOR_SHIPS}`;
+      newCell.appendChild(document.createTextNode(`${sfapi.tls(minTdr)}`));
+      e.appendChild(newCell);
     });
-    if (elementForMaxShips)
-      elementForMaxShips.append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_SHIPS}'>
-        <span>${sfapi.tls(minShips)} (${sfapi.tls(minShipsForNas)})</span></td>`);
+
+    if (!elementForMaxShips)
+      return;
+
+    let newCell = document.createElement('td');
+    newCell.classList.add('value', 'text10', 'w60');
+    newCell.dataset.hint = `${sfui_language.ENOUGH_RES_FOR_SHIPS}`;
+    const maxShipsText = `${sfapi.tls(minShips)} (${sfapi.tls(minShipsForNas)})`;
+    newCell.appendChild(document.createTextNode(maxShipsText));
+    elementForMaxShips.appendChild(newCell);
   });
 
+  parentNode_jq[0].dataset.maxShipsCounted = true;
 }
 
 //Добавляем кнопочки в окно просмотра империи
@@ -3372,7 +3387,7 @@ sfui.pushPlugins([
     wndCondition: 'WndPlanet',
     callback: sfui.addMaxShipsCount,
     callbackCondition: () => {
-      return (getWindow('WndPlanet').activetab === 'main-orbitaldock');
+      return getWindow('WndPlanet').activetab === 'main-orbitaldock';
     },
     help: {
       img: 'https://i.postimg.cc/52VvdH27/image.png',

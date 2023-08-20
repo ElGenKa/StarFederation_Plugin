@@ -2167,7 +2167,9 @@ sfui.addMaxBuildsCount = function () {
   if (parentNode_jq[0].dataset.maxBuildsCounted)
     return;
 
-  const buildButtons_jq = parentNode_jq.find(`button:contains('${sfui_language.BUILD}')`);
+  const buildButtons_jq = parentNode_jq.find(
+    `button:contains('${sfui_language.BUILD}'):not(:has(> span.shaddow5))`
+  );
   Array.from(buildButtons_jq).forEach(element => {
     const node = element.nextElementSibling.children[0];
     if (node.innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) === -1

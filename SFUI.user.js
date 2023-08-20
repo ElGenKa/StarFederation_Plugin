@@ -2184,13 +2184,13 @@ sfui.addMaxBuildsCount = function () {
         if (name !== sfui_language.POPULATION && minTdr < minBuilds)
           minBuilds = minTdr;
 
-        $(e).append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
-            <span class="addMaxBuildsCount">${sfapi.tls(minTdr)}</span></td>`);
+        $(e).append(`<td class="value text10 w60 addMaxBuildsCount" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
+            <span >${sfapi.tls(minTdr)}</span></td>`);
       } catch (e) { }
     });
 
     if (elementForMaxBuilds)
-      elementForMaxBuilds.append(`<td class="value text10 w60" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
+      elementForMaxBuilds.append(`<td class="value text10 w60 addMaxBuildsCount" data-hint='${sfui_language.ENOUGH_RES_FOR_BLDS}'>
           <span>${sfapi.tls(minBuilds)}</span></td>`);
   });
 }

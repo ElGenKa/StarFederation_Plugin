@@ -2095,8 +2095,8 @@ sfui.wndSelectPlanet = function () {
   for (let i = 0; i < rows_jq.length; i++) {
     const row = rows_jq[i];
     const id = row.cells[1].innerText.replace(/\u00a0/g, "");
-    const id_int = parseInt(row.cells.eq(1)[0].children[0].firstChild.onclick.toString().split("planetid=")[1].split("')")[0]);
-    const commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_FLY}" onclick="fleet_external_comand(2,'${id}');" style="background:url(/images/icons/i_fleet_fly_12.png);cursor:pointer; width: 12px; height: 12px;background-size: contain;"></div></td>`);
+    const id_int = parseInt($(row.cells[1])[0].children[0].firstChild.onclick.toString().split("planetid=")[1].split("')")[0]);
+    let commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_FLY}" onclick="fleet_external_comand(2,'${id}');" style="background:url(/images/icons/i_fleet_fly_12.png);cursor:pointer; width: 12px; height: 12px;background-size: contain;"></div></td>`);
     row.append(commFly[0]);
     commFly = $(`<td><div data-hint="${sfui_language.ADD_CMD_JUMP}" onclick="fleet_external_comand(19,'${id}');" style="background:url(/images/icons/i_cmd_jump_12.png);cursor:pointer;height:12px;width:12px;background-size: contain;"></div></td>`);
     row.append(commFly[0]);

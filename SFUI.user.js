@@ -2199,7 +2199,7 @@ sfui.addMaxBuildsCount = function () {
 
         let newCell = document.createElement('td');
         newCell.classList.add('value', 'text10', 'w60');
-        newCell.dataset.hint = `${sfui_language.ENOUGH_RES_FOR_BLDS}`;
+        newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_BLDS;
         newCell.appendChild(document.createTextNode(`${sfapi.tls(minTdr)}`));
         e.appendChild(newCell);
       } catch (e) { }
@@ -2210,7 +2210,7 @@ sfui.addMaxBuildsCount = function () {
 
     let newCell = document.createElement('td');
     newCell.classList.add('value', 'text10', 'w60');
-    newCell.dataset.hint = `${sfui_language.ENOUGH_RES_FOR_BLDS}`;
+    newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_BLDS;
     newCell.setAttribute('rowspan', '2');
     newCell.appendChild(document.createTextNode(`${sfapi.tls(minBuilds)}`));
     elementForMaxBuilds.appendChild(newCell);
@@ -2253,7 +2253,7 @@ sfui.addMaxShipsCount = function () {
 
       let newCell = document.createElement('td');
       newCell.classList.add('value', 'text10', 'w60');
-      newCell.dataset.hint = `${sfui_language.ENOUGH_RES_FOR_SHIPS}`;
+      newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_SHIPS;
       newCell.appendChild(document.createTextNode(`${sfapi.tls(minTdr)}`));
       e.appendChild(newCell);
     });
@@ -2263,7 +2263,7 @@ sfui.addMaxShipsCount = function () {
 
     let newCell = document.createElement('td');
     newCell.classList.add('value', 'text10', 'w60');
-    newCell.dataset.hint = `${sfui_language.ENOUGH_RES_FOR_SHIPS}`;
+    newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_SHIPS;
     const maxShipsText = `${sfapi.tls(minShips)} (${sfapi.tls(minShipsForNas)})`;
     newCell.appendChild(document.createTextNode(maxShipsText));
     elementForMaxShips.appendChild(newCell);

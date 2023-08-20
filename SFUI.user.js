@@ -761,6 +761,10 @@ const pluginsGroups = Object.freeze({
   another: { id: 'another', name: { en: 'Another', ru: 'Другое' } },
 });
 
+sfapi.objectToBody = (obj) => {
+  return new URLSearchParams(obj).toString();
+}
+
 sfapi.fetch = (url, options = {}) => {
   let basicOptions = {
     "headers": {
@@ -10263,92 +10267,126 @@ sfdata.attackTypes = {
   ALLIANCE: 2
 }
 
+class storageItem {
+  constructor(id, lvl, race, amount) {
+    this.id = id;
+    this.lvl = lvl;
+    this.race = race;
+    this.amount = amount;
+  }
+
+  drawForBody() {
+    return [`data[prods][${this.id}][${this.race}][${this.lvl}]`, this.amount];
+  }
+}
+
+async function fleetFetch(url, opt, queryOnly) {
+  return await sfapi.fleet.fleetFetch(url, opt, queryOnly)
+}
+
 sfapi.fleet = {
+  /**
+   *
+   * @param url
+   * @param opt
+   * @param queryOnly
+   * @return {Promise<boolean>}
+   */
+  fleetFetch: async (url, opt, queryOnly) => {
+    if (url === null)
+      url = '/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands'
+
+    const wndFleet = getWindow('WndFleet');
+    wndFleet.start_load();
+    try {
+      let res = await sfapi.fetch(url, opt);
+      if (!queryOnly) {
+        res = await res.text();
+        ajax_resp(res, wndFleet.on_loadcontent);
+      }
+    } catch (e) {
+      wndFleet.end_load();
+      console.error(e);
+      return false;
+    }
+    return true;
+  },
+
   /**
    * Команда патруля
    * @param time number or string. If number that 00:TIME:00
    * @param isAttack true or false.
+   * @param queryOnly
    * @return {Promise<boolean>} true is success and false is error
    */
-  patrol: async (time, isAttack = false) => {
+  patrol: async (time, isAttack = false, queryOnly = false) => {
     if (Number.isInteger(time)) {
       time = `00:${time}:00`;
-    } else if (!time.isString()) {
+    } else if (typeof time !== 'string') {
       return false;
     }
-    const wndFleet = getWindow('WndFleet');
-    wndFleet.start_load();
+
+    const body = {
+      idcmd: 2,
+      icmd: 'new',
+      'data[time]': time,
+      'data[isatack]': isAttack
+    };
 
     const opt = {
       "method": 'POST',
-      "body": new URLSearchParams({
-        idcmd: 2,
-        icmd: 'new',
-        'data[time]': time,
-        'data[isatack]': isAttack
-      }).toString()
+      "body": sfapi.objectToBody(body)
     }
 
-    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
-    res = await res.text();
-    ajax_resp(res, wndFleet.on_loadcontent)
-    return true;
+    return await fleetFetch(null, opt, queryOnly);
   },
 
   /**
    * Команда расформировки
+   * @param queryOnly
    * @return {Promise<boolean>}
    */
   disband: async () => {
-    const wndFleet = getWindow('WndFleet');
-    wndFleet.start_load();
+    const body = {
+      idcmd: 38,
+      icmd: 'new'
+    };
 
     const opt = {
       "method": 'POST',
-      "body": new URLSearchParams({
-        idcmd: 38,
-        icmd: 'new'
-      }).toString()
+      "body": sfapi.objectToBody(body)
     }
 
-    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
-    res = await res.text();
-    ajax_resp(res, wndFleet.on_loadcontent)
-    return true;
+    return await fleetFetch(null, opt, queryOnly);
   },
 
   /**
    * Лечь в дрейф
+   * @param queryOnly
    * @return {Promise<boolean>}
    */
-  drifting: async () => {
-    const wndFleet = getWindow('WndFleet');
-    wndFleet.start_load();
+  drifting: async (queryOnly = false) => {
+    const body = {
+      idcmd: 19,
+      icmd: 'new'
+    };
 
     const opt = {
       "method": 'POST',
-      "body": new URLSearchParams({
-        idcmd: 19,
-        icmd: 'new'
-      }).toString()
+      "body": sfapi.objectToBody(body)
     }
 
-    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
-    res = await res.text();
-    ajax_resp(res, wndFleet.on_loadcontent)
-    return true;
+    return await fleetFetch(null, opt, queryOnly);
   },
 
   /**
    * Атаковать игроков на координатах
    * @param attackType - see sfdata.attackTypes - allow variables: ALL, PLAYER, ALLIANCE
    * @param attackParam - if selected PLAYER or ALLIANCE
+   * @param queryOnly
    * @return {Promise<boolean>}
    */
-  attack: async (attackType, attackParam = '') => {
-    const wndFleet = getWindow('WndFleet');
-    wndFleet.start_load();
-
+  attack: async (attackType, attackParam = '', queryOnly = false) => {
     if (!Number.isInteger(attackType)) {
       attackType = parseInt(attackType);
     }
@@ -10357,56 +10395,57 @@ sfapi.fleet = {
       return false
     }
 
-    const opt = {
-      "method": 'POST',
-      "body": new URLSearchParams({
-        idcmd: 31,
-        icmd: 'new',
-        'data[atype]': attackType,
-        'data[player]': attackParam
-      }).toString()
+    const body = {
+      idcmd: 31,
+      icmd: 'new',
+      'data[atype]': attackType,
+      'data[player]': attackParam
     }
 
-    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
-    res = await res.text();
-    ajax_resp(res, wndFleet.on_loadcontent)
-    return true;
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
   },
 
-  repair: async () => {
-    const wndFleet = getWindow('WndFleet');
-    wndFleet.start_load();
+  /**
+   * Ремонт
+   * @param queryOnly
+   * @return {Promise<boolean>}
+   */
+  repair: async (queryOnly = false) => {
+    const body = {
+      idcmd: 17,
+      icmd: 'new'
+    };
 
     const opt = {
       "method": 'POST',
-      "body": new URLSearchParams({
-        idcmd: 17,
-        icmd: 'new'
-      }).toString()
+      "body": sfapi.objectToBody(body)
     }
 
-    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
-    res = await res.text();
-    ajax_resp(res, wndFleet.on_loadcontent)
-    return true;
+    return await fleetFetch(null, opt, queryOnly);
   },
 
-  fastRepair: async () => {
-    const wndFleet = getWindow('WndFleet');
-    wndFleet.start_load();
+  /**
+   * Быстрый ремонт
+   * @param queryOnly
+   * @return {Promise<boolean>}
+   */
+  fastRepair: async (queryOnly = false) => {
+    const body = {
+      idcmd: 36,
+      icmd: 'new'
+    };
 
     const opt = {
       "method": 'POST',
-      "body": new URLSearchParams({
-        idcmd: 36,
-        icmd: 'new'
-      }).toString()
+      "body": sfapi.objectToBody(body)
     }
 
-    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
-    res = await res.text();
-    ajax_resp(res, wndFleet.on_loadcontent)
-    return true;
+    return await fleetFetch(null, opt, queryOnly);
   },
 
   /**
@@ -10415,13 +10454,11 @@ sfapi.fleet = {
    * @param drifting
    * @param auto
    * @param securegate
+   * @param queryOnly
    * @return {Promise<boolean>}
    */
-  fly: async (target, drifting = false, auto = true, securegate = true) => {
-    const wndFleet = getWindow('WndFleet');
-    wndFleet.start_load();
-
-    if (!target.isString() || target.length < 3)
+  fly: async (target, drifting = false, auto = true, securegate = true, queryOnly = false) => {
+    if (typeof target !== 'string' || target.length < 3)
       return false;
 
     if (typeof drifting !== 'boolean')
@@ -10433,67 +10470,61 @@ sfapi.fleet = {
     if (typeof securegate !== 'boolean')
       securegate = true;
 
+    const body = {
+      idcmd: 4,
+      icmd: 'new',
+      'data[dest]': target,
+      'data[stopnofound]': drifting,
+      'data[auto]': auto,
+      'data[securegate]': securegate
+    };
+
     const opt = {
       "method": 'POST',
-      "body": new URLSearchParams({
-        idcmd: 4,
-        icmd: 'new',
-        'data[dest]': target,
-        'data[stopnofound]': drifting,
-        'data[auto]': auto,
-        'data[securegate]': securegate
-      }).toString()
+      "body": sfapi.objectToBody(body)
     }
 
-    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
-    res = await res.text();
-    ajax_resp(res, wndFleet.on_loadcontent)
-    return true;
+    return await fleetFetch(null, opt, queryOnly);
   },
 
   /**
    * Гипер переход
    * @param target
    * @param drifting
+   * @param queryOnly
    * @return {Promise<boolean>}
    */
-  hyperFly: async (target, drifting = false) => {
-    const wndFleet = getWindow('WndFleet');
-    wndFleet.start_load();
-
-    if (!target.isString() || target.length < 3)
+  hyperFly: async (target, drifting = false, queryOnly = false) => {
+    if (typeof target !== 'string' || target.length < 3)
       return false;
 
     if (typeof drifting !== 'boolean')
       drifting = false;
 
+    const body = {
+      idcmd: 13,
+      icmd: 'new',
+      'data[dest]': target,
+      'data[stopnofound]': drifting,
+    };
+
     const opt = {
       "method": 'POST',
-      "body": new URLSearchParams({
-        idcmd: 13,
-        icmd: 'new',
-        'data[dest]': target,
-        'data[stopnofound]': drifting,
-      }).toString()
+      "body": sfapi.objectToBody(body)
     }
 
-    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
-    res = await res.text();
-    ajax_resp(res, wndFleet.on_loadcontent)
-    return true;
+    return await fleetFetch(null, opt, queryOnly);
   },
 
   /**
    *
    * @param target
    * @param engine true is jump engine and false is AD
+   * @param queryOnly
    * @return {Promise<boolean>}
    */
-  jump: async (target, engine = true) => {
-    const wndFleet = getWindow('WndFleet');
-    wndFleet.start_load();
-
-    if (!target.isString() || target.length < 3)
+  jump: async (target, engine = true, queryOnly = false) => {
+    if (typeof target !== 'string' || target.length < 3)
       return false;
 
     if (typeof engine !== 'boolean')
@@ -10504,21 +10535,77 @@ sfapi.fleet = {
     else
       engine = 'ad';
 
+    const body = {
+      idcmd: 14,
+      icmd: 'new',
+      'data[dest]': target,
+      'data[jumpwith]': engine
+    };
+
     const opt = {
       "method": 'POST',
-      "body": new URLSearchParams({
-        idcmd: 14,
-        icmd: 'new',
-        'data[dest]': target,
-        'data[jumpwith]': engine
-      }).toString()
+      "body": sfapi.objectToBody(body)
     }
 
-    let res = await sfapi.fetch('/?m=windows&w=WndFleet&a=addcomand&dest=WndFleet_main-comands', opt);
-    res = await res.text();
-    ajax_resp(res, wndFleet.on_loadcontent)
-    return true;
+    return await fleetFetch(null, opt, queryOnly);
   },
 
+  /**
+   * Погрузить во флот
+   * @param {Number} id
+   * @param {Number} size
+   * @param {Number} race
+   * @param {Number} lvl
+   * @param {Number} project
+   * @param {Boolean} everyShip
+   * @param {Boolean} stopNeed
+   * @return {Promise<boolean|*>}
+   */
+  load: async (id = null, size = null, race = 0, lvl = 0, project = 0, everyShip = true, stopNeed = false, queryOnly = false) => {
+    if (id === null || size === null)
+      return false;
 
+    const body = {
+      idcmd: 14,
+      icmd: 'new',
+      'data[projectid]': project,
+      'data[prodid]': id,
+      'data[raceid]': race,
+      'data[level]': lvl,
+      'data[size]': size,
+      'data[everyship]': everyShip,
+      'data[stoponneed]': stopNeed
+    };
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  unload: async (arrayStorageItems = [], queryOnly = false) => {
+    if (!Array.isArray(arrayStorageItems) || arrayStorageItems.length === 0)
+      return false;
+
+    const body = {
+      idcmd: 3,
+      icmd: 'new',
+    }
+
+    for (let item of arrayStorageItems) {
+      if (item instanceof storageItem) {
+        let itemData = item.drawForBody();
+        body[itemData[0]] = itemData[1];
+      }
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  }
 }

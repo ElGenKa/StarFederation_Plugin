@@ -2177,7 +2177,7 @@ sfui.addMaxBuildsCount = function () {
     let minBuilds = Number.MAX_SAFE_INTEGER;
     Array.from($(element.nextElementSibling).find('tr')).forEach((e, i) => {
       if (i === 0) {
-        elementForMaxBuilds = $(e);
+        elementForMaxBuilds = e;
         return;
       }
       try {

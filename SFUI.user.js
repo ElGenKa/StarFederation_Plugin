@@ -2325,10 +2325,8 @@ sfui.resAnimateChange = (wnd, delayMS) => {
 
     const newAmountValue = Math.round(sfapi.parseFloatExt(amountValue) + expenseVal);
     const massRate = Math.round(sfapi.parseFloatExt(massValue) / sfapi.parseFloatExt(amountValue));
-    amountData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(newAmountValue));
-    amountData_jq.children('span').eq(0).css('pointerEvents', 'none');
-    massData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(massRate * newAmountValue));
-    massData_jq.children('span').eq(0).css('pointerEvents', 'none');
+    amountData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(newAmountValue)).css('pointerEvents', 'none');
+    massData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(massRate * newAmountValue)).css('pointerEvents', 'none');
     expenseData_jq.children('span').eq(0).css('pointerEvents', 'none');
   });
 }

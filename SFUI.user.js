@@ -2168,7 +2168,7 @@ sfui.addMaxBuildsCount = function () {
     return;
 
   const buildButtons_jq = parentNode_jq.find(
-    `button:contains('${sfui_language.BUILD}'):not(:has(> span.shaddow5))`
+    `button:not(.shaddow4):contains('${sfui_language.BUILD}'):has(> span:not(.shaddow5))`
   );
   Array.from(buildButtons_jq).forEach(element => {
     const node = element.nextElementSibling.children[0];

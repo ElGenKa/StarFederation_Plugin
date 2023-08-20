@@ -2065,7 +2065,7 @@ sfui.updateSellCredits = function () {
     const amountData = $(`#WndTrade_federation-sellresourses span:contains("${sfui_language.CAN_BE_SOLD}")`).next().text();
     const availSellAmmount = sfapi.parseIntExt(amountData);
     const baseSelOneCredit = 0.0000001;
-    if (sellAmmount > 0)
+    if (availSellAmmount > 0)
       $('input[name="fedsellall[0-20-0-0]"]').val(availSellAmmount / baseSelOneCredit);
   } catch (e) {
     console.error(e);

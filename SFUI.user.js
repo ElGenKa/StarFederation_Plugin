@@ -1362,6 +1362,7 @@ function sfui_initDocumentScript() {
   document.sfui_formatTimeFromHours = sfui_formatTimeFromHours;
   document.TRLN = TRLN;
   document.fleetFetch = fleetFetch;
+  document.storageItem = storageItem;
 }
 
 function sfui_initWindowScript() {
@@ -1384,6 +1385,7 @@ function sfui_initWindowScript() {
   window.sfui_formatTimeFromHours = document.sfui_formatTimeFromHours;
   window.TRLN = document.TRLN;
   window.fleetFetch = document.fleetFetch;
+  window.storageItem = document.storageItem;
   `;
   document.body.append(newScript);
 }
@@ -10307,8 +10309,12 @@ class storageItem {
     this.amount = amount;
   }
 
-  drawForBody() {
+  drawForBodyUnload() {
     return [`data[prods][${this.id}][${this.race}][${this.lvl}]`, this.amount];
+  }
+
+  drawForBodyUnloadAll() {
+    return [`data[${this.id}][${this.race}][${this.lvl}]`, this.amount];
   }
 }
 
@@ -10630,7 +10636,7 @@ sfapi.fleet = {
 
     for (let item of arrayStorageItems) {
       if (item instanceof storageItem) {
-        let itemData = item.drawForBody();
+        let itemData = item.drawForBodyUnload();
         body[itemData[0]] = itemData[1];
       }
     }
@@ -10771,6 +10777,73 @@ sfapi.fleet = {
       icmd: 'new',
       'data[time]': time,
     };
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Выгрузить всё
+   * @param {Array.<storageItem>} arrayStorageItems
+   * @param {boolean} queryOnly
+   * @return {Promise<boolean|*>}
+   */
+  unloadAll: async (arrayStorageItems, queryOnly = false) => {
+    if (!Array.isArray(arrayStorageItems) || arrayStorageItems.length === 0)
+      return false;
+
+    const body = {
+      idcmd: 11,
+      icmd: 'new',
+    }
+
+    for (let item of arrayStorageItems) {
+      if (item instanceof storageItem) {
+        let itemData = item.drawForBodyUnloadAll();
+        body[itemData[0]] = itemData[1];
+      }
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   *
+   * @param {Number} projectid
+   * @param {Number} catid
+   * @param {Boolean} subcats
+   * @param {Number} prodid
+   * @param {Number} raceid
+   * @param {Number} level
+   * @param {Number} size
+   * @param {Number} maxweight
+   * @param {Boolean} everyship
+   * @return {Promise<*>}
+   */
+  loadAll: async (projectid = 0, catid = 0, subcats = false, prodid = 0, raceid = 0, level = '-', size = '', maxweight = '', everyship = true) => {
+    const body = {
+      idcmd: 11,
+      icmd: 'new',
+      'data[projectid]': projectid,
+      'data[catid]': catid,
+      'data[catid_h]': catid,
+      'data[subcats]': subcats.toString(),
+      'data[prodid]': prodid,
+      'data[raceid]': raceid,
+      'data[level]': level,
+      'data[size]': size,
+      'data[maxweight]': maxweight,
+      'data[everyship]': everyship.toString(),
+    }
 
     const opt = {
       "method": 'POST',

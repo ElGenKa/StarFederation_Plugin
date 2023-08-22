@@ -10316,6 +10316,10 @@ class storageItem {
   drawForBodyUnloadAll() {
     return [`data[${this.id}][${this.race}][${this.lvl}]`, this.amount];
   }
+
+  drawToLoadToFleet() {
+    return [`data[prod]`, `[${this.id}][${this.race}][${this.lvl}]`, this.amount];
+  }
 }
 
 sfapi.fleet = {
@@ -10844,6 +10848,191 @@ sfapi.fleet = {
       'data[size]': size,
       'data[maxweight]': maxweight,
       'data[everyship]': everyship.toString(),
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Строительство
+   * @param {Number} buildID
+   * @param {Number} lvl
+   * @param {Boolean} queryOnly
+   * @return {Promise<Boolean>}
+   */
+  build: async (buildID = 7, lvl = 0, queryOnly = false) => {
+    if (buildID !== 7 && buildID !== 90)
+      return false;
+
+    if (lvl < 0)
+      return false;
+
+    const body = {
+      idcmd: 9,
+      icmd: 'new',
+      'data[bid]': buildID,
+      'data[lvl]': lvl,
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Постановка гравитационных помех
+   * @param {number|string} time
+   * @param {Boolean} stopnofound
+   * @param {Boolean} queryOnly
+   * @return {Promise<boolean|*>}
+   */
+  pgp: async (time = '00:01:00', stopnofound = false, queryOnly = false) => {
+    if (Number.isInteger(time)) {
+      time = `00:${time}:00`;
+    } else if (typeof time !== 'string') {
+      return false;
+    }
+
+    const body = {
+      idcmd: 23,
+      icmd: 'new',
+      'data[time]': time,
+      'data[stopnofound]': stopnofound,
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Поисковая операция
+   * @param {String} target
+   * @param {Boolean} queryOnly
+   * @return {Promise<void>}
+   */
+  searchOperation: async (target = '[11-22]', queryOnly = false) => {
+    const body = {
+      idcmd: 23,
+      icmd: 'new',
+      'data[dest]': target
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Выгрузить во флот
+   * @param {storageItem} storageItem
+   * @param {Number} fleetID
+   * @param {Number} projectID
+   * @param {Boolean} afterExec
+   * @param {Boolean} auto
+   * @param {Boolean} securegate
+   * @param {Boolean} queryOnly
+   * @return {Promise<*>}
+   */
+  loadToFleet: async (storageItem, fleetID, projectID, afterExec = false, auto = true, securegate = true, queryOnly = false) => {
+    const itemData = storageItem.drawToLoadToFleet();
+
+    const body = {
+      idcmd: 6,
+      icmd: 'new',
+      'data[fleetid]': fleetID,
+      'data[projectid]': projectID,
+      'data[afterExec]': afterExec.toString(),
+      'data[securegate]': securegate.toString(),
+      'data[size]': itemData[2],
+    }
+    body[itemData[0]] = itemData[1];
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Поместить в ангар флота
+   * @param {Number} fleetID
+   * @param {Boolean} stopnofound
+   * @param {Boolean} auto
+   * @param {Boolean} securegate
+   * @param {Boolean} queryOnly
+   * @return {Promise<*>}
+   */
+  loadToHangar: async (fleetID, stopnofound = false, auto = true, securegate = true, queryOnly = false) => {
+    const body = {
+      idcmd: 20,
+      icmd: 'new',
+      'data[fleetid]': fleetID,
+      'data[stopnofound]': stopnofound,
+      'data[auto]': auto,
+      'data[securegate]': securegate,
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Выгрузить из ангара
+   * @param {Number} fleetID
+   * @param {Boolean} afterexec
+   * @param {Boolean} stopnofound
+   * @param {Boolean} queryOnly
+   * @return {Promise<*>}
+   */
+  unloadFromHangar: async (fleetID, afterexec = false, stopnofound = false, queryOnly = false) => {
+    const body = {
+      idcmd: 21,
+      icmd: 'new',
+      'data[fleetid]': fleetID,
+      'data[stopnofound]': stopnofound,
+      'data[afterexec]': afterexec,
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Вывести все из ангара
+   * @param {Boolean} afterexec
+   * @param {Boolean} queryOnly
+   * @return {Promise<*>}
+   */
+  unloadAllFromHangar: async (afterexec = false, queryOnly = false) => {
+    const body = {
+      idcmd: 30,
+      icmd: 'new',
+      'data[afterexec]': afterexec,
     }
 
     const opt = {

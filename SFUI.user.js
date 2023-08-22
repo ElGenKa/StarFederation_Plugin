@@ -1362,6 +1362,7 @@ function sfui_initDocumentScript() {
   document.sfui_formatTimeFromHours = sfui_formatTimeFromHours;
   document.TRLN = TRLN;
   document.fleetFetch = fleetFetch;
+  document.storageItem = storageItem;
 }
 
 function sfui_initWindowScript() {
@@ -1384,6 +1385,7 @@ function sfui_initWindowScript() {
   window.sfui_formatTimeFromHours = document.sfui_formatTimeFromHours;
   window.TRLN = document.TRLN;
   window.fleetFetch = document.fleetFetch;
+  window.storageItem = document.storageItem;
   `;
   document.body.append(newScript);
 }
@@ -10307,8 +10309,16 @@ class storageItem {
     this.amount = amount;
   }
 
-  drawForBody() {
+  drawForBodyUnload() {
     return [`data[prods][${this.id}][${this.race}][${this.lvl}]`, this.amount];
+  }
+
+  drawForBodyUnloadAll() {
+    return [`data[${this.id}][${this.race}][${this.lvl}]`, this.amount];
+  }
+
+  drawToLoadToFleet() {
+    return [`data[prod]`, `[${this.id}][${this.race}][${this.lvl}]`, this.amount];
   }
 }
 
@@ -10630,7 +10640,7 @@ sfapi.fleet = {
 
     for (let item of arrayStorageItems) {
       if (item instanceof storageItem) {
-        let itemData = item.drawForBody();
+        let itemData = item.drawForBodyUnload();
         body[itemData[0]] = itemData[1];
       }
     }
@@ -10778,5 +10788,342 @@ sfapi.fleet = {
     }
 
     return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Выгрузить всё
+   * @param {Array.<storageItem>} arrayStorageItems
+   * @param {boolean} queryOnly
+   * @return {Promise<boolean|*>}
+   */
+  unloadAll: async (arrayStorageItems, queryOnly = false) => {
+    if (!Array.isArray(arrayStorageItems) || arrayStorageItems.length === 0)
+      return false;
+
+    const body = {
+      idcmd: 11,
+      icmd: 'new',
+    }
+
+    for (let item of arrayStorageItems) {
+      if (item instanceof storageItem) {
+        let itemData = item.drawForBodyUnloadAll();
+        body[itemData[0]] = itemData[1];
+      }
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   *
+   * @param {Number} projectid
+   * @param {Number} catid
+   * @param {Boolean} subcats
+   * @param {Number} prodid
+   * @param {Number} raceid
+   * @param {Number} level
+   * @param {Number} size
+   * @param {Number} maxweight
+   * @param {Boolean} everyship
+   * @param {Boolean} queryOnly
+   * @return {Promise<*>}
+   */
+  loadAll: async (projectid = 0, catid = 0, subcats = false, prodid = 0, raceid = 0, level = '-', size = '', maxweight = '', everyship = true, queryOnly) => {
+    const body = {
+      idcmd: 11,
+      icmd: 'new',
+      'data[projectid]': projectid,
+      'data[catid]': catid,
+      'data[catid_h]': catid,
+      'data[subcats]': subcats.toString(),
+      'data[prodid]': prodid,
+      'data[raceid]': raceid,
+      'data[level]': level,
+      'data[size]': size,
+      'data[maxweight]': maxweight,
+      'data[everyship]': everyship.toString(),
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Строительство
+   * @param {Number} buildID
+   * @param {Number} lvl
+   * @param {Boolean} queryOnly
+   * @return {Promise<Boolean>}
+   */
+  build: async (buildID = 7, lvl = 0, queryOnly = false) => {
+    if (buildID !== 7 && buildID !== 90)
+      return false;
+
+    if (lvl < 0)
+      return false;
+
+    const body = {
+      idcmd: 9,
+      icmd: 'new',
+      'data[bid]': buildID,
+      'data[lvl]': lvl,
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Постановка гравитационных помех
+   * @param {number|string} time
+   * @param {Boolean} stopnofound
+   * @param {Boolean} queryOnly
+   * @return {Promise<boolean|*>}
+   */
+  pgp: async (time = '00:01:00', stopnofound = false, queryOnly = false) => {
+    if (Number.isInteger(time)) {
+      time = `00:${time}:00`;
+    } else if (typeof time !== 'string') {
+      return false;
+    }
+
+    const body = {
+      idcmd: 23,
+      icmd: 'new',
+      'data[time]': time,
+      'data[stopnofound]': stopnofound,
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Поисковая операция
+   * @param {String} target
+   * @param {Boolean} queryOnly
+   * @return {Promise<void>}
+   */
+  searchOperation: async (target = '[11-22]', queryOnly = false) => {
+    const body = {
+      idcmd: 23,
+      icmd: 'new',
+      'data[dest]': target
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Выгрузить во флот
+   * @param {storageItem} storageItem
+   * @param {Number} fleetID
+   * @param {Number} projectID
+   * @param {Boolean} afterExec
+   * @param {Boolean} auto
+   * @param {Boolean} securegate
+   * @param {Boolean} queryOnly
+   * @return {Promise<*>}
+   */
+  loadToFleet: async (storageItem, fleetID, projectID, afterExec = false, auto = true, securegate = true, queryOnly = false) => {
+    const itemData = storageItem.drawToLoadToFleet();
+
+    const body = {
+      idcmd: 6,
+      icmd: 'new',
+      'data[fleetid]': fleetID,
+      'data[projectid]': projectID,
+      'data[afterExec]': afterExec.toString(),
+      'data[securegate]': securegate.toString(),
+      'data[size]': itemData[2],
+    }
+    body[itemData[0]] = itemData[1];
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Поместить в ангар флота
+   * @param {Number} fleetID
+   * @param {Boolean} stopnofound
+   * @param {Boolean} auto
+   * @param {Boolean} securegate
+   * @param {Boolean} queryOnly
+   * @return {Promise<*>}
+   */
+  loadToHangar: async (fleetID, stopnofound = false, auto = true, securegate = true, queryOnly = false) => {
+    const body = {
+      idcmd: 20,
+      icmd: 'new',
+      'data[fleetid]': fleetID,
+      'data[stopnofound]': stopnofound,
+      'data[auto]': auto,
+      'data[securegate]': securegate,
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Выгрузить из ангара
+   * @param {Number} fleetID
+   * @param {Boolean} afterexec
+   * @param {Boolean} stopnofound
+   * @param {Boolean} queryOnly
+   * @return {Promise<*>}
+   */
+  unloadFromHangar: async (fleetID, afterexec = false, stopnofound = false, queryOnly = false) => {
+    const body = {
+      idcmd: 21,
+      icmd: 'new',
+      'data[fleetid]': fleetID,
+      'data[stopnofound]': stopnofound,
+      'data[afterexec]': afterexec,
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Вывести все из ангара
+   * @param {Boolean} afterexec
+   * @param {Boolean} queryOnly
+   * @return {Promise<*>}
+   */
+  unloadAllFromHangar: async (afterexec = false, queryOnly = false) => {
+    const body = {
+      idcmd: 30,
+      icmd: 'new',
+      'data[afterexec]': afterexec,
+    }
+
+    const opt = {
+      "method": 'POST',
+      "body": sfapi.objectToBody(body)
+    }
+
+    return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Запустить командный лист
+   * @param cicle
+   * @param queryOnly
+   * @return {Promise<*>}
+   */
+  start: async (cicle = 0, queryOnly = false) => {
+    let url = `/?m=windows&w=WndFleet&a=startfly&dest=window&cicle=${cicle}`;
+    const opt = {
+      "method": 'GET',
+    }
+    return await fleetFetch(url, opt, queryOnly);
+  },
+
+  /**
+   * Остановить командный лист
+   * @param queryOnly
+   * @return {Promise<*>}
+   */
+  stop: async (queryOnly = false) => {
+    let url = `/?m=windows&w=WndFleet&a=abortfly&dest=window`;
+    const opt = {
+      "method": 'GET',
+    }
+    return await fleetFetch(url, opt, queryOnly);
+  },
+
+  /**
+   * очистить командный лист
+   * @param queryOnly
+   * @return {Promise<*>}
+   */
+  clear: async (queryOnly = false) => {
+    let url = `/?m=windows&w=WndFleet&a=clearfly&dest=WndFleet_main-comands`;
+    const opt = {
+      "method": 'GET',
+    }
+    return await fleetFetch(url, opt, queryOnly);
+  },
+
+  /**
+   * Обновить состояние флота
+   * @param fleetID
+   * @param queryOnly
+   * @return {Promise<*>}
+   */
+  fleetStateUpdate: async (fleetID, queryOnly = false) => {
+    let url = `/?m=windows&w=WndFleets&a=refreshfleet&dest=WndFleets_myfleets_row_${fleetID}&fleetid=${fleetID}`;
+    const opt = {
+      "method": 'GET',
+    }
+    let res = await sfapi.fetch(url, opt);
+    if (!queryOnly) {
+      res = await res.text();
+      ajax_resp(res, getWindow('WndFleets').on_loadcontent);
+    }
+    return true;
+  },
+
+  /**
+   * Создает таймер для обновления состояния флота
+   * @param {Number} fleetID
+   * @param {Number} interval
+   * @return {Boolean}
+   */
+  fleetStateUpdateTimer: (fleetID = 0, interval = 10000) => {
+    if (typeof sfui.cacheData.fleetsStates === 'undefined') {
+      sfui.cacheData.fleetsStates = [];
+    }
+
+    if (interval < 10000)
+      return false;
+
+    if (fleetID === 0 || typeof fleetID !== 'number')
+      return false;
+
+    let timerID = setInterval(() => {
+      getWindow('WndFleets').refresh_fleet(fleetID)
+    }, interval);
+    sfui.cacheData.fleetsStates.push({ fleet: fleetID, timer: timerID });
+
+    return true;
   }
 }

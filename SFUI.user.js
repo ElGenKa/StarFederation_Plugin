@@ -10827,9 +10827,10 @@ sfapi.fleet = {
    * @param {Number} size
    * @param {Number} maxweight
    * @param {Boolean} everyship
+   * @param {Boolean} queryOnly
    * @return {Promise<*>}
    */
-  loadAll: async (projectid = 0, catid = 0, subcats = false, prodid = 0, raceid = 0, level = '-', size = '', maxweight = '', everyship = true) => {
+  loadAll: async (projectid = 0, catid = 0, subcats = false, prodid = 0, raceid = 0, level = '-', size = '', maxweight = '', everyship = true, queryOnly) => {
     const body = {
       idcmd: 11,
       icmd: 'new',
@@ -10851,5 +10852,89 @@ sfapi.fleet = {
     }
 
     return await fleetFetch(null, opt, queryOnly);
+  },
+
+  /**
+   * Запустить командный лист
+   * @param cicle
+   * @param queryOnly
+   * @return {Promise<*>}
+   */
+  start: async (cicle = 0, queryOnly = false) => {
+    let url = `/?m=windows&w=WndFleet&a=startfly&dest=window&cicle=${cicle}`;
+    const opt = {
+      "method": 'GET',
+    }
+    return await fleetFetch(url, opt, queryOnly);
+  },
+
+  /**
+   * Остановить командный лист
+   * @param queryOnly
+   * @return {Promise<*>}
+   */
+  stop: async (queryOnly = false) => {
+    let url = `/?m=windows&w=WndFleet&a=abortfly&dest=window`;
+    const opt = {
+      "method": 'GET',
+    }
+    return await fleetFetch(url, opt, queryOnly);
+  },
+
+  /**
+   * очистить командный лист
+   * @param queryOnly
+   * @return {Promise<*>}
+   */
+  clear: async (queryOnly = false) => {
+    let url = `/?m=windows&w=WndFleet&a=clearfly&dest=WndFleet_main-comands`;
+    const opt = {
+      "method": 'GET',
+    }
+    return await fleetFetch(url, opt, queryOnly);
+  },
+
+  /**
+   * Обновить состояние флота
+   * @param fleetID
+   * @param queryOnly
+   * @return {Promise<*>}
+   */
+  fleetStateUpdate: async (fleetID, queryOnly = false) => {
+    let url = `/?m=windows&w=WndFleets&a=refreshfleet&dest=WndFleets_myfleets_row_${fleetID}&fleetid=${fleetID}`;
+    const opt = {
+      "method": 'GET',
+    }
+    let res = await sfapi.fetch(url, opt);
+    if (!queryOnly) {
+      res = await res.text();
+      ajax_resp(res, getWindow('WndFleets').on_loadcontent);
+    }
+    return true;
+  },
+
+  /**
+   * Создает таймер для обновления состояния флота
+   * @param {Number} fleetID
+   * @param {Number} interval
+   * @return {Boolean}
+   */
+  fleetStateUpdateTimer: (fleetID = 0, interval = 10000) => {
+    if (typeof sfui.cacheData.fleetsStates === 'undefined') {
+      sfui.cacheData.fleetsStates = [];
+    }
+
+    if (interval < 10000)
+      return false;
+
+    if (fleetID === 0 || typeof fleetID !== 'number')
+      return false;
+
+    let timerID = setInterval(() => {
+      getWindow('WndFleets').refresh_fleet(fleetID)
+    }, interval);
+    sfui.cacheData.fleetsStates.push({ fleet: fleetID, timer: timerID });
+
+    return true;
   }
 }

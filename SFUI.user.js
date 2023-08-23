@@ -11148,9 +11148,14 @@ sfapi.fleet = {
     table.style.display = 'none';
     $('body').append(table);
     let tds = $('#temp_row_' + fleetID).find('td');
-    let state = tds[5].innerText;
 
-    resultObject.state = state;
+    resultObject.fleetID = tds[0].innerText;
+    resultObject.distance = tds[1].innerText;
+    resultObject.ico = $(tds[2]).find('img').attr('src');
+    resultObject.name = tds[3].innerText;
+    resultObject.size = tds[4].innerText;
+    resultObject.state = tds[5].innerText;
+    resultObject.jobTime = tds[6].innerText;
     $(table).remove();
 
     sfui.cacheData.fleetState[fleetID.toString()] = resultObject;

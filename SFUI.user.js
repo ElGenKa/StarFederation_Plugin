@@ -11087,126 +11087,34 @@ sfapi.fleet = {
   },
 
   /**
-   * Обновить состояние флота
+   *
    * @param fleetID
-   * @param queryOnly
-   * @return {Promise<*>}
+   * @return {Promise<boolean>}
    */
-  fleetStateUpdate: async (fleetID, queryOnly = false) => {
-    let url = `/?m=windows&w=WndFleets&a=refreshfleet&dest=WndFleets_myfleets_row_${fleetID}&fleetid=${fleetID}`;
+  openFleet: async (fleetID) => {
+    if (!getWindow('WndFleet').isshow()) {
+      const win = getWindow('WndFleet').win;
+      win.show();
+      win.bringToTop();
+    }
+    const opt = {
+      "method": 'GET',
+    }
+    let url = `/?m=windows&w=WndFleet&id=${fleetID}`;
+    let res = await sfapi.fetch(url, opt);
+    res = await res.text();
+    ajax_resp(res, getWindow('WndFleets').on_loadcontent);
+    return true;
+  },
+
+  deleteCommand: async (icmd) => {
+    let url = `/?m=windows&w=WndFleet&a=removecomand&dest=WndFleet_main-comands&icmd=${icmd}`;
     const opt = {
       "method": 'GET',
     }
     let res = await sfapi.fetch(url, opt);
-    if (!queryOnly) {
-      res = await res.text();
-      ajax_resp(res, getWindow('WndFleets').on_loadcontent);
-    }
-    return true;
-  },
-
-  /**
-   * Получить статус флота
-   * @param {Number} fleetID
-   * @return {Promise<*>}
-   */
-  getFleetState: async (fleetID) => {
-    if (typeof sfui.cacheData.fleetState === 'undefined')
-      sfui.cacheData.fleetState = {};
-
-    if (sfui.cacheData.fleetState[fleetID.toString()]) {
-      if (sfui.cacheData.fleetState[fleetID.toString()].lastTime + 10000 < Date.now()) {
-        return sfui.cacheData.fleetState[fleetID.toString()];
-      }
-    }
-
-    const url = `/?m=windows&w=WndFleets&a=refreshfleet&dest=WndFleets_myfleets_row_${fleetID}&fleetid=${fleetID}`;
-
-    let dataResult = await fetch(url, {
-      "headers": {
-        "accept": "*/*",
-        "accept-language": "ru,en;q=0.9",
-        "x-requested-with": "XMLHttpRequest"
-      },
-      "body": null,
-      "method": "GET",
-      "mode": "cors",
-      "credentials": "include"
-    });
-
-    let result = await dataResult.text();
-    let resultJson = JSON.parse(result.split('<!-- JSONDATA ')[1].split('-->')[0]);
-    let resultHtml = result.split('-->')[1].split("<script>")[0];
-    let resultObject = { json: resultJson, html: resultHtml, time: Date.now() };
-
-    let table = document.createElement('table');
-    table.id = 'temp_' + fleetID;
-    let tr = document.createElement('tr');
-    $(table).append(tr);
-    tr.innerHTML = resultHtml;
-    tr.id = 'temp_row_' + fleetID;
-    table.style.display = 'none';
-    $('body').append(table);
-    let tds = $('#temp_row_' + fleetID).find('td');
-
-    resultObject.fleetID = tds[0].innerText;
-    resultObject.distance = tds[1].innerText;
-    resultObject.ico = $(tds[2]).find('img').attr('src');
-    resultObject.name = tds[3].innerText;
-    resultObject.size = tds[4].innerText;
-    resultObject.state = tds[5].innerText;
-    resultObject.jobTime = tds[6].innerText;
-    $(table).remove();
-
-    sfui.cacheData.fleetState[fleetID.toString()] = resultObject;
-    return resultObject;
-  },
-
-  /**
-   * Создает таймер для обновления состояния флота
-   * @param {Number} fleetID
-   * @param {Number} interval
-   * @return {Boolean}
-   */
-  fleetStateUpdateTimer: (fleetID = 0, interval = 10000) => {
-    if (typeof sfui.cacheData.fleetStateTimers === 'undefined') {
-      sfui.cacheData.fleetStateTimers = [];
-    }
-
-    if (interval < 10000)
-      return false;
-
-    if (fleetID === 0 || typeof fleetID !== 'number')
-      return false;
-
-    let timerID = setInterval(() => {
-      getWindow('WndFleets').refresh_fleet(fleetID)
-    }, interval);
-    sfui.cacheData.fleetStateTimers.push({ fleet: fleetID, timer: timerID });
-
-    return true;
-  },
-
-  /**
-   * Остановить таймер обвноления статуса флота
-   * @param {Number} fleetID
-   * @return {boolean}
-   */
-  fleetStateUpdateTimerStop: (fleetID) => {
-    if (typeof sfui.cacheData.fleetStateTimers === 'undefined') {
-      return false;
-    }
-
-    let isFind = false;
-    for (let fleetTimer of sfui.cacheData.fleetStateTimers) {
-      if (fleetTimer.fleet === fleetID) {
-        clearInterval(fleetTimer.timer);
-        isFind = true;
-        break;
-      }
-    }
-
-    return isFind;
+    res = await res.text();
+    ajax_resp(res, getWindow('WndFleets').on_loadcontent);
   }
 }
 

@@ -980,7 +980,7 @@ function sfui_Init() {
   sfui_saveSettings();
   dhxWins.window('SFUI_win').close();
   //Проверяем, если открыта главная страница, то ничего не делаем и если существует боковое меню добавляем точку входа в скрипт
-  if ($("#main-login").length != 0 || $("#divMenu").length < 1)
+  if ($("#main-login").length !== 0 || $("#divMenu").length < 1)
     return;
 
   if (typeof userScripts.install != 'function') {
@@ -991,8 +991,8 @@ function sfui_Init() {
   userScripts.install({ 'wnd_end_load': sfui.endPoint });
   sfui.wndBinds.OnLoadScript.forEach(plugin => {
     try {
-      if (plugin.callbackCondition?.() ?? true)
-        plugin.callback();
+      if (plugin.callbackCondition?.(null) ?? true)
+        plugin.callback(null);
     } catch (e) {
       console.error(e);
     }
@@ -1092,7 +1092,7 @@ function sfui_openPreWindow() {
       htmlHelp = `<div class='m2' style='width: 16px'></div>`
 
     let colorRow = '';
-    if (plugin.isDisabled)
+    if (plugin.disabled)
       colorRow = 'color: red;';
 
     if (plugin.type.toLowerCase() === 'bool') {
@@ -1170,6 +1170,9 @@ sfui.pluginPushError = (text, plugin) => {
 }
 
 sfui.pluginDataCheck = (plugin) => {
+  if (plugin.disabled)
+    return false;
+
   // Код должен быть строкой
   if (typeof plugin.code !== 'string') {
     sfui.pluginPushError(`plugin.code !== 'string'`, plugin);
@@ -1185,7 +1188,7 @@ sfui.pluginDataCheck = (plugin) => {
   ]
 
   if (allowTypes.indexOf(plugin.type) === -1) {
-    sfui.pluginPushError(plugin.type + " is not allow type", plugin);
+    sfui.pluginPushError(plugin.type + " is not a valid type", plugin);
     return false;
   }
 
@@ -1197,12 +1200,12 @@ sfui.pluginDataCheck = (plugin) => {
 
   if (Array.isArray(plugin.wndCondition)) {
     if (plugin.wndCondition.length < 1) {
-      sfui.pluginPushError("wndCondition is array but wndCondition.length < 1", plugin);
+      sfui.pluginPushError("plugin.wndCondition is an empty array", plugin);
       return false;
     }
     for (const X of plugin.wndCondition) {
       if (typeof X !== 'string') {
-        sfui.pluginPushError(`plugin.wndCondition[${X}] is not a string`, plugin);
+        sfui.pluginPushError(`All plugin.wndCondition elements must have string type`, plugin);
         return false;
       }
     }
@@ -1216,9 +1219,8 @@ sfui.pluginDataCheck = (plugin) => {
 
 // Добавление модуля в скрипт
 sfui.pushPlugin = (plugin) => {
-  if (!sfui.pluginDataCheck(plugin)) {
+  if (!sfui.pluginDataCheck(plugin))
     return false;
-  }
 
   const allWndConds = Array.isArray(plugin.wndCondition) ? plugin.wndCondition : [plugin.wndCondition];
   for (const wndCond of allWndConds) {
@@ -1236,22 +1238,22 @@ sfui.pushPlugin = (plugin) => {
 sfui.pushPlugins = (plugins) => {
   if (!Array.isArray(plugins))
     return 0;
-  let success = 0;
 
+  let loadedCount = 0;
   for (const plugin of plugins)
-    success += sfui.pushPlugin(plugin) ? 1 : 0;
+    loadedCount += sfui.pushPlugin(plugin) ? 1 : 0;
 
-  console.log('SFUI loaded plugins:', success);
-  return success;
+  console.log('SFUI loaded plugins: ', loadedCount);
+  return loadedCount;
 }
 
 // Добавление настроек (из вне)
 sfui.pushSettings = (code, value) => {
   if (typeof code === 'string' && value) {
     sfui.settings[code] = value;
-    return 1;
+    return true;
   }
-  return 0;
+  return false;
 }
 
 // sfdata.buildings sfdata.hulls sfdata.questions sfdata.productions
@@ -1934,9 +1936,9 @@ sfui.endPoint = function (wnd) {
       // Выполнение коллбэка обернуто в try catch для отлова ошибок,
       // если один из модулей выдаст ошибку - скрипт не прервет свое выполнение
       try {
-        if (plugin.isDisabled || !sfui.settings[plugin.code])
+        if (plugin.disabled || !sfui.settings[plugin.code])
           return;
-        if (plugin.callbackCondition?.() ?? true)
+        if (plugin.callbackCondition?.(wnd) ?? true)
           plugin.callback(wnd);
       } catch (e) {
         console.error(e);
@@ -1976,9 +1978,9 @@ sfui.calcTradeCount = function () {
 
 //Ужим строк в просмотре системы
 // TODO: надо бы декомпозировать, правда вот хезе как
-sfui.resizeStarRows = function () {
+sfui.resizeStarRows = function (wnd) {
   try {
-    let innerContainer = $(getWindow("WndStar").win).find("#WndStar_main-planets div.content_box div.controls-center-row-top");
+    let innerContainer = $(wnd.win).find("#WndStar_main-planets div.content_box div.controls-center-row-top");
     if (innerContainer.length > 0) {
       let newRowHTML = `<table class='data-table w-100'><tbody>`;
       let prepareDataError = false;
@@ -2062,7 +2064,7 @@ sfui.resizeStarRows = function () {
       });
       newRowHTML += '</tbody></table>';
       if (!prepareDataError)
-        $(getWindow("WndStar").win).find("#WndStar_main-planets div.content_box").html(newRowHTML);
+        $(wnd.win).find("#WndStar_main-planets div.content_box").html(newRowHTML);
     }
   } catch (e) {
     console.error(e);
@@ -2102,8 +2104,8 @@ sfui.updateSellCredits = function () {
 }
 
 // Устанавливаем маскимальные уровни исследований
-sfui.wndScienceSetMaxTech = function () {
-  $(getWindow('WndScience').win).find('.hintcontent').each((i, element) => {
+sfui.setMaxTech = function (wnd) {
+  $(wnd.win).find('.hintcontent').each((i, element) => {
     const containsMaxLvl = $(element).find(`td:contains('${sfui_language.MAX_LVL_TECH}')`);
     if (containsMaxLvl.length < 1)
       return;
@@ -2115,8 +2117,8 @@ sfui.wndScienceSetMaxTech = function () {
 }
 
 //Открытие окна просмотра планет, добавляем команды для флотов
-sfui.wndSelectPlanet = function () {
-  const title = $(getWindow('WndSelect').win).find(".dhtmlx_wins_title")[0].innerText;
+sfui.wndSelectPlanet = function (wnd) {
+  const title = $(wnd.container).find(".dhtmlx_wins_title")[0].innerText;
   if (title !== sfui_language.SELECT_COLONY)
     return;
 
@@ -2141,15 +2143,15 @@ sfui.wndSelectPlanet = function () {
 }
 
 //Добавление кнопки выгрузки в окно управления флотом
-sfui.unloadAllNoFuelFleet = function () {
-  const window = getWindow("WndFleet");
-  if (window.activetab !== 'main-comands')
+sfui.unloadAllNoFuelFleet = function (wnd) {
+  if (wnd.activetab !== 'main-comands')
     return;
   //Проверяем, нет ли этой кнопки (иногда окно обновляется без полной перезаписи содержимого)
-  if ($(window.win).find('#dropAllExtOnFleets').length !== 0)
+  const win_jq = $(wnd.win);
+  if (win_jq.find('#dropAllExtOnFleets').length !== 0)
     return;
 
-  const controlsPanel = $(window.win).find('.controls-center-row').eq(1);
+  const controlsPanel = win_jq.find('.controls-center-row').eq(1);
   controlsPanel.append(`
     <button class="image_btn noselect" id="dropAllExtOnFleets" onclick="sfcommands.dropAllExtOnFleets()" style="cursor:pointer;margin-left:5px; padding: 2px;">
     <img data-hint="${sfui_language.UNLOAD_ALL}" src="/images/icons/i-unloadall-16.png" style="height:12px;width:12px;">
@@ -2165,54 +2167,53 @@ sfui.unloadAllNoFuelFleet = function () {
 }
 
 //Устанавливаем максимальные уровни для построек
-sfui.setMaxLevelsBuilds = function () {
-  const isBuildOpen = $(getWindow("WndPlanet").win).find("div[tab_id='main-buildings']").eq(0).hasClass('dhx_tab_element_active');
-  if (!isBuildOpen)
+sfui.setMaxLevelsBuilds = function (wnd) {
+  const parentNode_jq = $(wnd.container).find('#WndPlanet_buildings_list').last();
+  if (parentNode_jq.length < 1)
     return;
 
-  $(".hintcontent[id^='WndPlanet_buh_']").each(function (i, e) {
-    const fe = $(e).find(`span:contains('${sfui_language.MAX_LVL}')`);
-    if (fe.length < 1 || !fe[0].nextElementSibling)
+  const btnHints_jq = parentNode_jq.find(`button:not(.shaddow4) + div.hintcontent[id^="WndPlanet_buh_"]`);
+  const spanSelector = `span:contains("${sfui_language.MAX_LVL}")`;
+  btnHints_jq.each((i, btnHint) => {
+    const upgrText_span = $(btnHint).find(spanSelector)[0];
+    if (!upgrText_span || !upgrText_span.nextElementSibling)
       return;
 
-    const maxLevel = fe[0].nextElementSibling.innerText;
+    const maxLevel = upgrText_span.nextElementSibling.innerText;
     if (maxLevel)
-      $(e).parent()[0].previousElementSibling.children[0].value = maxLevel.replaceAll(' ', '');
+      btnHint.parentElement.previousElementSibling.children[0].value = maxLevel.replaceAll(' ', '');
   });
 }
 
 //Добавляем в хинт инфу, на сколько хватит построек
-sfui.addMaxBuildsCount = function () {
-  const window = getWindow("WndPlanet");
-  const parentNode_jq = $(window.container).find('#WndPlanet_buildings_list').last();
+sfui.addMaxBuildsCount = function (wnd) {
+  const parentNode_jq = $(wnd.container).find('#WndPlanet_buildings_list').last();
   if (parentNode_jq.length < 1)
     return;
   if (parentNode_jq[0].dataset.maxBuildsCounted)
     return;
 
-  const buildButtons_jq = parentNode_jq.find(
-    `button:not(.shaddow4):contains('${sfui_language.BUILD}'):has(> span:not(.shaddow5))`
+  const resNeedHints_jq = parentNode_jq.find(
+    `button:not(.shaddow4) + div.hintcontent[id^="WndPlanet_bh_"]`
   );
-  Array.from(buildButtons_jq).forEach(element => {
-    const node = element.nextElementSibling.children[0];
-    if (node.innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) === -1
-      && node.innerText.indexOf(sfui_language.ORBITAL_PLATFORMS) === -1)
+  Array.from(resNeedHints_jq).forEach(element => {
+    const hintDataNode = $(element).children('div.textbox-d')[0];
+    if (!hintDataNode)
       return;
-    let row = node.children[0].rows[0];
-    const cellUse = sfapi.parseIntExt(row.cells[2].innerText);
-    const cellFree = sfapi.parseIntExt(row.cells[3].innerText);
-    const cellsGo = Math.floor(cellFree / cellUse);
-    let elementForMaxBuilds = null;
-    row.cells[2].innerText = cellUse + " (" + cellsGo + ")";
 
-    let minBuilds = Number.MAX_SAFE_INTEGER;
-    Array.from($(element.nextElementSibling).find('tr')).forEach((e, i) => {
-      if (i === 0) {
-        elementForMaxBuilds = e;
-        return;
-      }
+    const rows = hintDataNode.children[0].rows;
+    const firstRow = rows[0];
+    const cellUse = sfapi.parseIntExt(firstRow.cells[2].innerText);
+    const cellFree = sfapi.parseIntExt(firstRow.cells[3].innerText);
+    const cellsGo = Math.floor(cellFree / cellUse);
+    firstRow.cells[2].innerText = cellUse + " (" + cellsGo + ")";
+
+    let elementForMaxBuilds = rows[0];
+    let minBuilds = cellsGo;
+    for (let i = 1; i < rows.length; ++i) {
+      const row = rows[i];
       try {
-        const tdr = $(e).find('td');
+        const tdr = row.cells;
         const name = tdr[1].innerText;
         const need = tdr[2];
         const amount = tdr[3];
@@ -2220,13 +2221,13 @@ sfui.addMaxBuildsCount = function () {
         if (name !== sfui_language.POPULATION && minTdr < minBuilds)
           minBuilds = minTdr;
 
-        let newCell = document.createElement('td');
+        const newCell = document.createElement('td');
         newCell.classList.add('value', 'text10', 'w60');
         newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_BLDS;
-        newCell.appendChild(document.createTextNode(`${sfapi.tls(minTdr)}`));
-        e.appendChild(newCell);
+        newCell.appendChild(document.createTextNode(sfapi.tls(minTdr).toString()));
+        row.appendChild(newCell);
       } catch (e) { }
-    });
+    }
 
     if (!elementForMaxBuilds)
       return;
@@ -2235,7 +2236,7 @@ sfui.addMaxBuildsCount = function () {
     newCell.classList.add('value', 'text10', 'w60');
     newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_BLDS;
     newCell.setAttribute('rowspan', '2');
-    newCell.appendChild(document.createTextNode(`${sfapi.tls(minBuilds)}`));
+    newCell.appendChild(document.createTextNode(sfapi.tls(minBuilds).toString()));
     elementForMaxBuilds.appendChild(newCell);
   });
 
@@ -2243,9 +2244,8 @@ sfui.addMaxBuildsCount = function () {
 }
 
 //Добавляем в хинт инфу, на сколько хватит кораблей
-sfui.addMaxShipsCount = function () {
-  const window = getWindow("WndPlanet");
-  const parentNode_jq = $(window.container).find('#WndPlanet_od_projects_content').last();
+sfui.addMaxShipsCount = function (wnd) {
+  const parentNode_jq = $(wnd.container).find('#WndPlanet_od_projects_content').last().children();
   if (parentNode_jq.length < 1)
     return;
   if (parentNode_jq[0].dataset.maxShipsCounted)
@@ -2274,7 +2274,7 @@ sfui.addMaxShipsCount = function () {
       } else if (minTdr < minShipsForNas)
         minShipsForNas = minTdr;
 
-      let newCell = document.createElement('td');
+      const newCell = document.createElement('td');
       newCell.classList.add('value', 'text10', 'w60');
       newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_SHIPS;
       newCell.appendChild(document.createTextNode(`${sfapi.tls(minTdr)}`));
@@ -2296,8 +2296,8 @@ sfui.addMaxShipsCount = function () {
 }
 
 //Добавляем кнопочки в окно просмотра империи
-sfui.externalCommandsInEmpire = function () {
-  if (getWindow("WndPlanets").activetab === 'main-colonies') {
+sfui.externalCommandsInEmpire = function (wnd) {
+  if (wnd.activetab === 'main-colonies') {
     let rows = $("[id^='WndPlanets_colonies_row_']");
     for (let i = 0; i < rows.length; i++) {
       let row = rows[i];
@@ -2316,8 +2316,8 @@ sfui.externalCommandsInEmpire = function () {
 }
 
 //Добавляем хинт на время до исчерпания ресурса
-sfui.resRemainTime = function () {
-  const activeTab = getWindow('WndPlanet').activetab;
+sfui.resRemainTime = function (wnd) {
+  const activeTab = wnd.activetab;
   if (activeTab != "wp-materials" && activeTab != "wp-resourses")
     return;
 
@@ -2436,26 +2436,21 @@ sfui.calcUsedStorageInFleet = function () {
 
 // Сортировка УД во флоте
 sfui.udShuffleFleet = (wnd) => {
-  if (wnd.win.idd === 'WndFleet' && wnd.activetab === 'main-options') {
+  if (wnd.activetab === 'main-options')
     sfui.udShuffle(wnd, 'WndFleet');
-  }
 }
 // Сортировка УД на планете
 sfui.udShufflePlanet = (wnd) => {
-  if (wnd.win.idd === 'WndPlanet' && wnd.activetab === 'co-additional') {
+  if (wnd.activetab === 'co-additional')
     sfui.udShuffle(wnd, 'WndPlanet');
-  }
 }
 // Сортировка кнопок построек внизу окна "Управление планетами"
 sfui.sortBuildsButtons = (wnd) => {
-  if (wnd.win.idd !== 'WndPlanet')
+  const parentElement = wnd.container.querySelector('#WndPlanet_buildings_buttons');
+  if (parentElement.length < 1 || parentElement.dataset?.sorted)
     return;
 
-  const parentElement_jq = $('#WndPlanet_buildings_buttons');
-  if (parentElement_jq[0].dataset.sorted)
-    return;
-
-  const buildsButtons_jq = parentElement_jq.children(`div[onclick*="getWindow('WndBuilding')"]`);
+  const buildsButtons_jq = $(parentElement).children(`div[onclick*="getWindow('WndBuilding')"]`);
   const buildsIdsAndBtnsSorted = buildsButtons_jq.map((i, button) => {
     const onclickStr = button.getAttribute('onclick');
     const buildId = parseInt(/show\(.+bid=(\d+)/g.exec(onclickStr)[1]);
@@ -2469,7 +2464,7 @@ sfui.sortBuildsButtons = (wnd) => {
 
   let i = 0;
   let allOrederedChilds = [];
-  parentElement_jq[0].childNodes.forEach(node => {
+  parentElement.childNodes.forEach(node => {
     if (buildsButtons_jq[i] !== node) {
       allOrederedChilds.push(node);
       return;
@@ -2479,8 +2474,8 @@ sfui.sortBuildsButtons = (wnd) => {
     i += 1;
   });
 
-  parentElement_jq[0].replaceChildren(...allOrederedChilds);
-  parentElement_jq[0].dataset.sorted = true;
+  parentElement.replaceChildren(...allOrederedChilds);
+  parentElement.dataset.sorted = true;
 }
 // Сортировка УД в магазине Федерации
 sfui.udShuffleTrade = (wnd) => {
@@ -3411,9 +3406,7 @@ sfui.pushPlugins([
     title: sfui_language.MANY_SHIPS,
     wndCondition: 'WndPlanet',
     callback: sfui.addMaxShipsCount,
-    callbackCondition: () => {
-      return getWindow('WndPlanet').activetab === 'main-orbitaldock';
-    },
+    callbackCondition: wnd => wnd.activetab === 'main-orbitaldock',
     help: {
       img: 'https://i.postimg.cc/52VvdH27/image.png',
       text: 'Подсчет кол-ва кораблей для строительства.<br>Там где время - минимальновозможное кол-во кораблей для строительства (в скобках значение с учетом населения).<br>Там где ресы и КК - на сколько кораблей хватит данного ресурса'
@@ -3435,9 +3428,7 @@ sfui.pushPlugins([
         $("#WndPlanetsDisableAll").remove();
       }
     },
-    callbackCondition: () => {
-      return getWindow('WndPlanets').activetab === 'buildings-build';
-    },
+    callbackCondition: wnd => wnd.activetab === 'buildings-build',
     help: {
       img: 'https://i.postimg.cc/s2JQSp4X/image.png',
       text: 'В обзоре империи на влкдке "постройки" если выбрать в фильтре арх. центры то будут кнопки переключения работы арх. центров.'
@@ -3474,9 +3465,7 @@ sfui.pushPlugins([
     title: sfui_language.SHRINKING_SS_ROWS,
     wndCondition: 'WndStar',
     callback: sfui.resizeStarRows,
-    callbackCondition: () => {
-      return getWindow("WndStar").activetab === "main-planets";
-    },
+    callbackCondition: wnd => wnd.activetab === "main-planets",
     help: {
       img: 'https://i.postimg.cc/J0gYg2qP/Screenshot-19.jpg',
       text: 'В окне просмотра системы строки будут минимизированны, вся информация сохранится, например размер планет, масса полей, атмосфера (в номере окрашивается в цвет атмосферы и при наведении будет подсказка), владелец и т.д.'
@@ -3508,9 +3497,7 @@ sfui.pushPlugins([
         } catch (e) { }
       });
     },
-    callbackCondition: () => {
-      return $('#WndBuilding_data [id^="WndBuilding_time_"]').length > 0;
-    },
+    callbackCondition: wnd => $(wnd.container).find('#WndBuilding_data td[id^="WndBuilding_time_"]').length > 0,
     help: {
       img: 'https://i.postimg.cc/Zqh24XhQ/Screenshot-15.jpg',
       text: 'В окне производства (конкретного здания) под мощностью будет выводится время в часах, до заверешения производства'
@@ -3653,9 +3640,7 @@ sfui.pushPlugins([
         }
       });
     },
-    callbackCondition: () => {
-      return getWindow("WndFleet").activetab === 'main-comands';
-    }
+    callbackCondition: wnd => wnd.activetab === 'main-comands',
   },
   {
     group: pluginsGroups.fleet.id,
@@ -3872,9 +3857,7 @@ sfui.pushPlugins([
         }
       }
     },
-    callbackCondition: () => {
-      return getWindow('WndFleet').activetab === 'main-comands';
-    }
+    callbackCondition: wnd => wnd.activetab === 'main-comands'
   },
   {
     group: pluginsGroups.fleet.id,
@@ -3882,6 +3865,7 @@ sfui.pushPlugins([
     type: 'bool',
     title: sfui_language.EXT_SMART_COMMANDS,
     wndCondition: 'WndFleet',
+    disabled: true,
     callback: () => {
       if (!$('.WndFleetSeparatorToSmartCommands').length) {
         const container = $('#WndFleet_container div.controls-left-row.controlbox');
@@ -3915,9 +3899,7 @@ sfui.pushPlugins([
       //const container = $('#WndFleet_container div.controls-left-row.controlbox');
       //container.append(`<div class="vsep m2 h100p WndFleetSeparatorToSmartFlyList"></div>`);
     },
-    callbackCondition: () => {
-      return getWindow('WndFleet').activetab === 'main-comands';
-    }
+    callbackCondition: wnd => wnd.activetab === 'main-comands'
   },
   {
     group: pluginsGroups.fleet.id,
@@ -3987,7 +3969,7 @@ sfui.pushPlugins([
     type: 'bool',
     title: sfui_language.SET_MAX_TECH,
     wndCondition: 'WndScience',
-    callback: sfui.wndScienceSetMaxTech,
+    callback: sfui.setMaxTech,
     help: {
       img: 'https://i.postimg.cc/J7PLK7Wz/Screenshot-1.jpg',
       text: 'В окне технологий будут устанавливаться максимальные уровни'
@@ -4124,9 +4106,7 @@ sfui.pushPlugins([
     title: sfui_language.PLANET_TRANSFER,
     wndCondition: 'WndSelect',
     callback: empireShow.autoTransports,
-    callbackCondition: () => {
-      return getWindow('WndSelect').win.getText() === sfui_language.SELECT_COLONY;
-    },
+    callbackCondition: wnd => wnd.win.getText() === sfui_language.SELECT_COLONY,
     help: {
       img: 'https://i.postimg.cc/cC6k6hmW/Screenshot-28.jpg',
       text: 'Функция формирующая полетный лист на выбранные планеты для развора ресомата'
@@ -4139,9 +4119,7 @@ sfui.pushPlugins([
     title: sfui_language.PLANET_TRANSFER_EMPIRE_SHOW,
     wndCondition: 'WndPlanets',
     callback: empireShow.autoTransportsWndPlanets,
-    callbackCondition: () => {
-      return getWindow('WndPlanets').activetab === 'buildings-build';
-    }
+    callbackCondition: wnd => wnd.activetab === 'buildings-build'
   },
   {
     group: pluginsGroups.automation.id,
@@ -4190,9 +4168,7 @@ sfui.pushPlugins([
     title: sfui_language.AUTO_CALC_CREDIT_SALE,
     wndCondition: 'WndTrade',
     callback: sfui.updateSellCredits,
-    callbackCondition: () => {
-      return getWindow('WndTrade').activetab === "federation-sellresourses";
-    },
+    callbackCondition: wnd => wnd.activetab === "federation-sellresourses",
     help: {
       img: 'https://i.postimg.cc/mZdvCdQc/Screenshot-10.jpg',
       text: 'У меня 0 (все продал хе-хе), но по факту там автоматически будет выставляться сумма кредитов для продажи (сумма чтоб полностью обнулить доступную продажу)'
@@ -4205,9 +4181,7 @@ sfui.pushPlugins([
     title: sfui_language.TC_ALL_PRICES,
     wndCondition: 'WndTrade',
     callback: sfui.calcTradeCount,
-    callbackCondition: () => {
-      return getWindow('WndTrade').activetab === "main-rates";
-    },
+    callbackCondition: wnd => wnd.activetab === "main-rates",
     help: {
       img: 'https://i.postimg.cc/gkQ1Bntm/Screenshot-13.jpg',
       text: 'Сумма всех ставок будет подсчитываться и выводится в отдельном окошке. Приблуда для оценивания продаж всего что выставленно.'
@@ -4220,9 +4194,7 @@ sfui.pushPlugins([
     title: sfui_language.SHRINKING_TC_ROWS,
     wndCondition: 'WndTrade',
     callback: sfui.updateTradeRow,
-    callbackCondition: () => {
-      return getWindow('WndTrade').activetab === "main-rates";
-    },
+    callbackCondition: wnd => wnd.activetab === "main-rates",
     help: {
       img: 'https://i.postimg.cc/mrNqDVLg/Screenshot-11.jpg',
       text: 'Уменьшает высоту строк торговых стравок, таким образом все ставки умещаются на странице без скролла'
@@ -4464,9 +4436,7 @@ sfui.pushPlugins([
         ad.html(htmlCode);
       }, 100);
     },
-    callbackCondition: () => {
-      return getWindow('WndTrade').activetab === "main-adversting";
-    },
+    callbackCondition: wnd => wnd.activetab === "main-adversting",
     help: {
       img: 'https://i.postimg.cc/6pZFstFR/Screenshot-14.jpg',
       text: 'Ссылки будут кликабельными и открывать ссылку в новой вкадке барузера'

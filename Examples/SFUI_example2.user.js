@@ -12,56 +12,39 @@
 // ==/UserScript==
 
 $(document).ready(function () {
-    if ($("#main-login").length == 0 && $("#divMenu").length > 0) {
-        setTimeout(() => {
-            sfui.pushPlugin({
-                code: 'example_f_script_1',
-                group: 'planet',
-                type: 'bool',
-                title: 'Добавить в заголовок окна планеты её ID',
-                wndCondition: 'WndPlanet',
-                callback: () => {
-                    addPlanetID();
-                },
-                callbackCondition: () => {
-                    return true;
-                },
-            })
-        }, 100);
+  if ($("#main-login").length !== 0 || $("#divMenu").length < 1)
+    return;
 
-
-        setTimeout(() => {
-            sfui.pushPlugin({
-                code: 'example_f_script_2',
-                group: 'planet',
-                type: 'bool',
-                title: 'В орбитальном доке убрать картинки кораблей',
-                wndCondition: 'WndPlanet',
-                callback: () => {
-                    removeImgShips();
-                },
-                callbackCondition: () => {
-                    // Проверка какой таб открыт
-                    let isCall = false;
-                    if (getWindow('WndPlanet').activetab === 'main-orbitaldock')
-                        isCall = true;
-                    return isCall;
-                },
-            })
-        }, 100);
-    }
+  setTimeout(() => {
+    sfui.pushPlugins([{
+      code: 'example_f_script_1',
+      group: 'planet',
+      type: 'bool',
+      title: 'Добавить в заголовок окна планеты её ID',
+      wndCondition: 'WndPlanet',
+      callback: addPlanetID
+    },
+    {
+      code: 'example_f_script_2',
+      group: 'planet',
+      type: 'bool',
+      title: 'В орбитальном доке убрать картинки кораблей',
+      wndCondition: 'WndPlanet',
+      callback: removeImgShips,
+      callbackCondition: wnd => wnd.activetab === 'main-orbitaldock'
+    }]);
+  }, 100);
 });
 
-const addPlanetID = () => {
-    console.log('1111');
-    let planetID = $('#WndPlanet_planets').find('[name="planetid"]').val();
-    planetID = planetID.split(',')[0];
-    let newPlanetTitle = getWindow('WndPlanet').win.getText() + " ID: " + planetID;
-    getWindow('WndPlanet').win.setText(newPlanetTitle);
+const addPlanetID = (wnd) => {
+  console.log('addPlanetID');
+  let planetID = $(wnd.win).find('#WndPlanet_planets [name="planetid"]').val();
+  planetID = planetID.split(',')[0];
+  const newPlanetTitle = wnd.win.getText().split(' ')[0] + " ID: " + planetID;
+  wnd.win.setText(newPlanetTitle);
 }
 
-const removeImgShips = () => {
-    console.log('2222');
-    let shipsContainer = $('#WndPlanet_od_projects_content_cover');
-    shipsContainer.find('img[height="128px"]').remove();
+const removeImgShips = (wnd) => {
+  console.log('removeImgShips');
+  $(wnd.container).find('#WndPlanet_od_projects_content_cover img[height="128px"]').remove();
 }

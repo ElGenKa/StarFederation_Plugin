@@ -10659,7 +10659,7 @@ sfapi.fleet = {
    * @param {boolean} stopnofound
    * @param {Array.<Number>} arrResp
    * @param {boolean} queryOnly
-   * @return {Promise<void>}
+   * @return {Promise<boolean>}
    */
   mine: async (restartonend = true, stopnofound = false, arrResp = [], queryOnly = false) => {
     if (arrResp.length === 0) {
@@ -10695,18 +10695,14 @@ sfapi.fleet = {
   },
 
   /**
-   * Арх раскопки
-   * @param {boolean} stopnofound
-   * @param {number} cicles
+   * Геологоразведка
    * @param {boolean} queryOnly
-   * @return {Promise<void>}
+   * @return {Promise<boolean>}
    */
-  arch: async (stopnofound = false, cicles = 1, queryOnly = false) => {
+  geo: async (queryOnly = false) => {
     const body = {
-      idcmd: 15,
+      idcmd: 7,
       icmd: 'new',
-      'data[stopnofound]': stopnofound,
-      'data[cicles]': cicles,
     }
 
     const opt = {
@@ -10718,14 +10714,21 @@ sfapi.fleet = {
   },
 
   /**
-   * Геологоразведка
-   * @param {boolean} queryOnly
-   * @return {Promise<void>}
+   * Арх-раскопки
+   * @param {Number} cicles
+   * @param {Boolean} stopnofound
+   * @param {Boolean} queryOnly
+   * @return {Promise<boolean>}
    */
-  geo: async (queryOnly = false) => {
+  arch: async (cicles = 1, stopnofound = false, queryOnly = false) => {
+    if (cicles < 0)
+      return false;
+
     const body = {
-      idcmd: 7,
+      idcmd: 15,
       icmd: 'new',
+      'data[cicles]': cicles,
+      'data[stopnofound]': stopnofound,
     }
 
     const opt = {
@@ -11103,6 +11106,58 @@ sfapi.fleet = {
   },
 
   /**
+   * Получить статус флота
+   * @param {Number} fleetID
+   * @return {Promise<*>}
+   */
+  getFleetState: async (fleetID) => {
+    if (typeof sfui.cacheData.fleetState === 'undefined')
+      sfui.cacheData.fleetState = {};
+
+    if (sfui.cacheData.fleetState[fleetID.toString()]) {
+      if (sfui.cacheData.fleetState[fleetID.toString()].lastTime + 10000 < Date.now()) {
+        return sfui.cacheData.fleetState[fleetID.toString()];
+      }
+    }
+
+    const url = `/?m=windows&w=WndFleets&a=refreshfleet&dest=WndFleets_myfleets_row_${fleetID}&fleetid=${fleetID}`;
+
+    let dataResult = await fetch(url, {
+      "headers": {
+        "accept": "*/*",
+        "accept-language": "ru,en;q=0.9",
+        "x-requested-with": "XMLHttpRequest"
+      },
+      "body": null,
+      "method": "GET",
+      "mode": "cors",
+      "credentials": "include"
+    });
+
+    let result = await dataResult.text();
+    let resultJson = JSON.parse(result.split('<!-- JSONDATA ')[1].split('-->')[0]);
+    let resultHtml = result.split('-->')[1].split("<script>")[0];
+    let resultObject = { json: resultJson, html: resultHtml, time: Date.now() };
+
+    let table = document.createElement('table');
+    table.id = 'temp_' + fleetID;
+    let tr = document.createElement('tr');
+    $(table).append(tr);
+    tr.innerHTML = resultHtml;
+    tr.id = 'temp_row_' + fleetID;
+    table.style.display = 'none';
+    $('body').append(table);
+    let tds = $('#temp_row_' + fleetID).find('td');
+    let state = tds[5].innerText;
+
+    resultObject.state = state;
+    $(table).remove();
+
+    sfui.cacheData.fleetState[fleetID.toString()] = resultObject;
+    return resultObject;
+  },
+
+  /**
    * Создает таймер для обновления состояния флота
    * @param {Number} fleetID
    * @param {Number} interval
@@ -11125,5 +11180,67 @@ sfapi.fleet = {
     sfui.cacheData.fleetsStates.push({ fleet: fleetID, timer: timerID });
 
     return true;
+  },
+
+  /**
+   * Остановить таймер обвноления статуса флота
+   * @param {Number} fleetID
+   * @return {boolean}
+   */
+  fleetStateUpdateTimerStop: (fleetID) => {
+    if (typeof sfui.cacheData.fleetsStates === 'undefined') {
+      return false;
+    }
+
+    let isFind = false;
+    for (let fleetTimer of sfui.cacheData.fleetsStates) {
+      if (fleetTimer.fleet === fleetID) {
+        clearInterval(fleetTimer.timer);
+        isFind = true;
+        break;
+      }
+    }
+
+    return isFind;
+  }
+}
+
+sfapi.map = {
+  /**
+   * Получить информацию о квадрате
+   * @param {Object.<{x: number, y: number}>} quad
+   * @return {Promise<*>}
+   */
+  getQuadInfo: async (quad) => {
+    if (typeof sfui.cacheData.map === 'undefined') {
+      sfui.cacheData.map = {};
+    }
+
+    let xy = `${quad.x}_${quad.y}`;
+    if (sfui.cacheData.map[xy]) {
+      if (sfui.cacheData.map[xy].lastTime + 60000 > Date.now())
+        return sfui.cacheData.map[xy];
+    }
+
+    let qs = `qs[]=${quad.x}-${quad.y}`;
+
+    let dataResult = await fetch(`/?m=windows&w=WndStarMapB&a=qdata&${qs}`, {
+      "headers": {
+        "accept": "*/*",
+        "accept-language": "ru,en;q=0.9",
+        "x-requested-with": "XMLHttpRequest"
+      },
+      "body": null,
+      "method": "GET",
+      "mode": "cors",
+      "credentials": "include"
+    });
+
+    let result = await dataResult.text();
+    result = JSON.parse(result.split('<!-- JSONDATA ')[1].split('-->')[0]);
+    result.lastTime = Date.now();
+
+    sfui.cacheData.map[xy] = result;
+    return sfui.cacheData.map[xy];
   }
 }

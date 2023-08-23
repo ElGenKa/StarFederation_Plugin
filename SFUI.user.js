@@ -2193,13 +2193,12 @@ sfui.addMaxBuildsCount = function (wnd) {
   if (parentNode_jq[0].dataset.maxBuildsCounted)
     return;
 
-  const buildButtons_jq = parentNode_jq.find(
-    `button:not(.shaddow4):contains('${sfui_language.BUILD}'):has(> span:not(.shaddow5))`
+  const resNeedHints_jq = parentNode_jq.find(
+    `button:not(.shaddow4) + div.hintcontent[id^="WndPlanet_bh_"]`
   );
-  Array.from(buildButtons_jq).forEach(element => {
-    const node = element.nextElementSibling.children[0];
-    if (node.innerText.indexOf(sfui_language.PLANETARY_PLATFORMS) === -1
-      && node.innerText.indexOf(sfui_language.ORBITAL_PLATFORMS) === -1)
+  Array.from(resNeedHints_jq).forEach(element => {
+    const hintDataNode = $(element).children('div.textbox-d')[0];
+    if (!hintDataNode)
       return;
 
     const rows = hintDataNode.children[0].rows;
@@ -2209,15 +2208,12 @@ sfui.addMaxBuildsCount = function (wnd) {
     const cellsGo = Math.floor(cellFree / cellUse);
     firstRow.cells[2].innerText = cellUse + " (" + cellsGo + ")";
 
-    let elementForMaxBuilds = null;
+    let elementForMaxBuilds = rows[0];
     let minBuilds = cellsGo;
-    Array.from($(element.nextElementSibling).find('tr')).forEach((e, i) => {
-      if (i === 0) {
-        elementForMaxBuilds = e;
-        return;
-      }
+    for (let i = 1; i < rows.length; ++i) {
+      const row = rows[i];
       try {
-        const tdr = e.cells;
+        const tdr = row.cells;
         const name = tdr[1].innerText;
         const need = tdr[2];
         const amount = tdr[3];
@@ -2229,9 +2225,9 @@ sfui.addMaxBuildsCount = function (wnd) {
         newCell.classList.add('value', 'text10', 'w60');
         newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_BLDS;
         newCell.appendChild(document.createTextNode(sfapi.tls(minTdr).toString()));
-        e.appendChild(newCell);
+        row.appendChild(newCell);
       } catch (e) { }
-    });
+    }
 
     if (!elementForMaxBuilds)
       return;
@@ -2442,12 +2438,12 @@ sfui.calcUsedStorageInFleet = function () {
 sfui.udShuffleFleet = (wnd) => {
   if (wnd.activetab === 'main-options')
     sfui.udShuffle(wnd, 'WndFleet');
-  }
+}
 // Сортировка УД на планете
 sfui.udShufflePlanet = (wnd) => {
   if (wnd.activetab === 'co-additional')
     sfui.udShuffle(wnd, 'WndPlanet');
-  }
+}
 // Сортировка кнопок построек внизу окна "Управление планетами"
 sfui.sortBuildsButtons = (wnd) => {
   const parentElement = wnd.container.querySelector('#WndPlanet_buildings_buttons');

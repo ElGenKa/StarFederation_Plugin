@@ -991,8 +991,8 @@ function sfui_Init() {
   userScripts.install({ 'wnd_end_load': sfui.endPoint });
   sfui.wndBinds.OnLoadScript.forEach(plugin => {
     try {
-      if (plugin.callbackCondition?.() ?? true)
-        plugin.callback();
+      if (plugin.callbackCondition?.(null) ?? true)
+        plugin.callback(null);
     } catch (e) {
       console.error(e);
     }

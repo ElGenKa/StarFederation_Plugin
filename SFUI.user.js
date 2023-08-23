@@ -2168,18 +2168,20 @@ sfui.unloadAllNoFuelFleet = function (wnd) {
 
 //Устанавливаем максимальные уровни для построек
 sfui.setMaxLevelsBuilds = function (wnd) {
-  const isBuildOpen = $(wnd.win).find("div[tab_id='main-buildings']").eq(0).hasClass('dhx_tab_element_active');
-  if (!isBuildOpen)
+  const parentNode_jq = $(wnd.container).find('#WndPlanet_buildings_list').last();
+  if (parentNode_jq.length < 1)
     return;
 
-  $(".hintcontent[id^='WndPlanet_buh_']").each(function (i, e) {
-    const fe = $(e).find(`span:contains('${sfui_language.MAX_LVL}')`);
-    if (fe.length < 1 || !fe[0].nextElementSibling)
+  const btnHints_jq = parentNode_jq.find(`button:not(.shaddow4) + div.hintcontent[id^="WndPlanet_buh_"]`);
+  const spanSelector = `span:contains("${sfui_language.MAX_LVL}")`;
+  btnHints_jq.each((i, btnHint) => {
+    const upgrText_span = $(btnHint).find(spanSelector)[0];
+    if (!upgrText_span || !upgrText_span.nextElementSibling)
       return;
 
-    const maxLevel = fe[0].nextElementSibling.innerText;
+    const maxLevel = upgrText_span.nextElementSibling.innerText;
     if (maxLevel)
-      $(e).parent()[0].previousElementSibling.children[0].value = maxLevel.replaceAll(' ', '');
+      btnHint.parentElement.previousElementSibling.children[0].value = maxLevel.replaceAll(' ', '');
   });
 }
 

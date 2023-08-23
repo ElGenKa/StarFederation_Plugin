@@ -2102,8 +2102,8 @@ sfui.updateSellCredits = function () {
 }
 
 // Устанавливаем маскимальные уровни исследований
-sfui.wndScienceSetMaxTech = function () {
-  $(getWindow('WndScience').win).find('.hintcontent').each((i, element) => {
+sfui.setMaxTech = function (wnd) {
+  $(wnd.win).find('.hintcontent').each((i, element) => {
     const containsMaxLvl = $(element).find(`td:contains('${sfui_language.MAX_LVL_TECH}')`);
     if (containsMaxLvl.length < 1)
       return;
@@ -3987,7 +3987,7 @@ sfui.pushPlugins([
     type: 'bool',
     title: sfui_language.SET_MAX_TECH,
     wndCondition: 'WndScience',
-    callback: sfui.wndScienceSetMaxTech,
+    callback: sfui.setMaxTech,
     help: {
       img: 'https://i.postimg.cc/J7PLK7Wz/Screenshot-1.jpg',
       text: 'В окне технологий будут устанавливаться максимальные уровни'

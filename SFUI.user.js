@@ -51,6 +51,27 @@ let sfapi = {};
 let sfui_playerInfo = {}
 let sfui_isMobile = false;
 
+class storageItem {
+  constructor(id, lvl, race, amount) {
+    this.id = id;
+    this.lvl = lvl;
+    this.race = race;
+    this.amount = amount;
+  }
+
+  drawForBodyUnload() {
+    return [`data[prods][${this.id}][${this.race}][${this.lvl}]`, this.amount];
+  }
+
+  drawForBodyUnloadAll() {
+    return [`data[${this.id}][${this.race}][${this.lvl}]`, this.amount];
+  }
+
+  drawToLoadToFleet() {
+    return [`data[prod]`, `[${this.id}][${this.race}][${this.lvl}]`, this.amount];
+  }
+}
+
 // Языковые пакеты
 let sfui_language = {
   TEXT_MISSILE_PENETRATION: {
@@ -10299,27 +10320,6 @@ sfdata.attackTypes = {
   ALL: 0,
   PLAYER: 1,
   ALLIANCE: 2
-}
-
-class storageItem {
-  constructor(id, lvl, race, amount) {
-    this.id = id;
-    this.lvl = lvl;
-    this.race = race;
-    this.amount = amount;
-  }
-
-  drawForBodyUnload() {
-    return [`data[prods][${this.id}][${this.race}][${this.lvl}]`, this.amount];
-  }
-
-  drawForBodyUnloadAll() {
-    return [`data[${this.id}][${this.race}][${this.lvl}]`, this.amount];
-  }
-
-  drawToLoadToFleet() {
-    return [`data[prod]`, `[${this.id}][${this.race}][${this.lvl}]`, this.amount];
-  }
 }
 
 sfapi.fleet = {

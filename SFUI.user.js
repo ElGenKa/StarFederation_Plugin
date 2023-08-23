@@ -11169,8 +11169,8 @@ sfapi.fleet = {
    * @return {Boolean}
    */
   fleetStateUpdateTimer: (fleetID = 0, interval = 10000) => {
-    if (typeof sfui.cacheData.fleetsStates === 'undefined') {
-      sfui.cacheData.fleetsStates = [];
+    if (typeof sfui.cacheData.fleetStateTimers === 'undefined') {
+      sfui.cacheData.fleetStateTimers = [];
     }
 
     if (interval < 10000)
@@ -11182,7 +11182,7 @@ sfapi.fleet = {
     let timerID = setInterval(() => {
       getWindow('WndFleets').refresh_fleet(fleetID)
     }, interval);
-    sfui.cacheData.fleetsStates.push({ fleet: fleetID, timer: timerID });
+    sfui.cacheData.fleetStateTimers.push({ fleet: fleetID, timer: timerID });
 
     return true;
   },
@@ -11193,12 +11193,12 @@ sfapi.fleet = {
    * @return {boolean}
    */
   fleetStateUpdateTimerStop: (fleetID) => {
-    if (typeof sfui.cacheData.fleetsStates === 'undefined') {
+    if (typeof sfui.cacheData.fleetStateTimers === 'undefined') {
       return false;
     }
 
     let isFind = false;
-    for (let fleetTimer of sfui.cacheData.fleetsStates) {
+    for (let fleetTimer of sfui.cacheData.fleetStateTimers) {
       if (fleetTimer.fleet === fleetID) {
         clearInterval(fleetTimer.timer);
         isFind = true;

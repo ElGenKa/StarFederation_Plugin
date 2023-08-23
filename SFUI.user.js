@@ -9477,7 +9477,7 @@ sfui.battleLog = (resp) => {
   atkFleetsAfter.forEach((fleetAfter) => {
     const fleetBefore = atkFleetsBefore.find(fleetBefore => fleetBefore.number === fleetAfter.number);
     fleetAfter.ships.forEach((shipAfter) => {
-      shipBefore = fleetBefore.ships.find(shipBefore => shipBefore.name === shipAfter.name);
+      const shipBefore = fleetBefore.ships.find(shipBefore => shipBefore.name === shipAfter.name);
       shipAfter.pos1 = shipBefore.pos1;
       addShipToGrid(shipAfter, 'attack');
     });
@@ -9485,7 +9485,7 @@ sfui.battleLog = (resp) => {
   defFleetsAfter.forEach((fleetAfter) => {
     const fleetBefore = defFleetsBefore.find(fleetBefore => fleetBefore.number === fleetAfter.number);
     fleetAfter.ships.forEach((shipAfter) => {
-      shipBefore = fleetBefore.ships.find(shipBefore => shipBefore.name === shipAfter.name);
+      const shipBefore = fleetBefore.ships.find(shipBefore => shipBefore.name === shipAfter.name);
       shipAfter.pos1 = shipBefore.pos1;
       addShipToGrid(shipAfter, 'deffend');
     });

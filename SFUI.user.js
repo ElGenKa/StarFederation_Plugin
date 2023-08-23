@@ -2450,14 +2450,11 @@ sfui.udShufflePlanet = (wnd) => {
   }
 // Сортировка кнопок построек внизу окна "Управление планетами"
 sfui.sortBuildsButtons = (wnd) => {
-  if (wnd.win.idd !== 'WndPlanet')
+  const parentElement = wnd.container.querySelector('#WndPlanet_buildings_buttons');
+  if (parentElement.length < 1 || parentElement.dataset?.sorted)
     return;
 
-  const parentElement_jq = $('#WndPlanet_buildings_buttons');
-  if (parentElement_jq[0].dataset.sorted)
-    return;
-
-  const buildsButtons_jq = parentElement_jq.children(`div[onclick*="getWindow('WndBuilding')"]`);
+  const buildsButtons_jq = $(parentElement).children(`div[onclick*="getWindow('WndBuilding')"]`);
   const buildsIdsAndBtnsSorted = buildsButtons_jq.map((i, button) => {
     const onclickStr = button.getAttribute('onclick');
     const buildId = parseInt(/show\(.+bid=(\d+)/g.exec(onclickStr)[1]);
@@ -2471,7 +2468,7 @@ sfui.sortBuildsButtons = (wnd) => {
 
   let i = 0;
   let allOrederedChilds = [];
-  parentElement_jq[0].childNodes.forEach(node => {
+  parentElement.childNodes.forEach(node => {
     if (buildsButtons_jq[i] !== node) {
       allOrederedChilds.push(node);
       return;
@@ -2481,8 +2478,8 @@ sfui.sortBuildsButtons = (wnd) => {
     i += 1;
   });
 
-  parentElement_jq[0].replaceChildren(...allOrederedChilds);
-  parentElement_jq[0].dataset.sorted = true;
+  parentElement.replaceChildren(...allOrederedChilds);
+  parentElement.dataset.sorted = true;
 }
 // Сортировка УД в магазине Федерации
 sfui.udShuffleTrade = (wnd) => {

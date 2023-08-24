@@ -194,6 +194,10 @@ let sfui_language = {
     en: 'Enough resources for',
     ru: 'Ресурса хватит еще на'
   },
+  RES_IS_DEPLETING: {
+    en: 'Resource will deplete in a minute',
+    ru: 'Ресурс закончится в течении минуты'
+  },
   DAY_SHORT: {
     en: 'd',
     ru: 'д'
@@ -2318,7 +2322,7 @@ sfui.externalCommandsInEmpire = function (wnd) {
 //Добавляем хинт на время до исчерпания ресурса
 sfui.resRemainTime = function (wnd) {
   const activeTab = wnd.activetab;
-  if (activeTab != "wp-materials" && activeTab != "wp-resourses")
+  if (activeTab !== "wp-materials" && activeTab !== "wp-resourses")
     return;
 
   let rows = $("tr[id^='WndPlanet_" + activeTab + "_row_']");
@@ -2331,10 +2335,12 @@ sfui.resRemainTime = function (wnd) {
 
     const amount = sfapi.parseIntExt(dataRows[i].innerText);
     const timeRemain = -(amount / demand);
-    const hintStr = `${sfui_language.RES_TIME_REMAIN} ${sfui_formatTimeFromHours(timeRemain)}`;
     const cell_Amount_jq = dataRows.eq(i);
     const cell_Mass_jq = dataRows.eq(i + 1);
     const cell_Demand_jq = dataRows.eq(i + 2);
+    const hintStr = (timeRemain * 60 <= 1) ? sfui_language.RES_IS_DEPLETING
+      : `${sfui_language.RES_TIME_REMAIN} ${sfui_formatTimeFromHours(timeRemain)}`;
+
     cell_Amount_jq.attr('data-hint', hintStr);
     cell_Amount_jq.children('span').first().css('pointerEvents', 'none');
     cell_Mass_jq.attr('data-hint', hintStr);
@@ -2343,8 +2349,8 @@ sfui.resRemainTime = function (wnd) {
     cell_Demand_jq.children('span').first().css('pointerEvents', 'none');
   }
 }
-//Добавляем хинт на время до исчерпания ресурса
-sfui.resAnimateChange = (wnd, delayMS) => {
+//Периодическое обновление остатка ресурсов/материалов на складе
+sfui.resAnimateChange = (wnd, msDelta) => {
   const activeTab = wnd.activetab;
 
   let rows = '';
@@ -2354,38 +2360,46 @@ sfui.resAnimateChange = (wnd, delayMS) => {
     rows = $(`[id^='WndPlanet_wp-resourses_row_']`);
   else return;
 
+  let deplResRows = 0; // Кол-во строк с истощающимся ресурсом
   Array.from(rows).forEach((e, i) => {
     const cellsData = $(e).find('td');
-    let amountValue = '';
-    let massValue = '';
-    let expenseValue = '';
-
     const expenseData_jq = cellsData.eq(5);
-    expenseValue = expenseData_jq.find('span.v-norm').data('hint') ?? cellsData[5].innerText;
-    const expenseVal = sfapi.parseFloatExt(expenseValue) / 3600 * (delayMS / 1000);
+    const span_Expense = expenseData_jq.find('span.v-norm[data-hint]')[0];
+    const expenseVal = sfapi.parseFloatExt(span_Expense ? span_Expense.dataset.hint
+      : expenseData_jq[0].innerText) / 3600 * (msDelta / 1000);
     if (!expenseVal)
       return;
 
     const amountData_jq = cellsData.eq(3);
-    const span_Amount_jq = amountData_jq.find('span.v-norm');
-    if (span_Amount_jq.data('hint'))
-      amountValue = span_Amount_jq[0].dataset.hint ?? span_Amount_jq[1].dataset.hint
-    else
-      amountValue = cellsData[3].innerText;
+    const span_Amount = amountData_jq.find('span.v-norm[data-hint]')[0];
+    const amountValue = sfapi.parseFloatExt(span_Amount ? span_Amount.dataset.hint : amountData_jq[0].innerText);
 
     const massData_jq = cellsData.eq(4);
-    const span_Mass_jq = cellsData.eq(4).find('span.v-norm');
-    if (span_Mass_jq.data('hint'))
-      massValue = span_Mass_jq[0].dataset.hint ?? span_Mass_jq[1].dataset.hint;
-    else
-      massValue = cellsData[4].innerText;
+    const span_Mass = massData_jq.find('span.v-norm[data-hint]')[0];
+    const massValue = sfapi.parseFloatExt(span_Mass ? span_Mass.dataset.hint : massData_jq[0].innerText);
 
-    const newAmountValue = Math.round(sfapi.parseFloatExt(amountValue) + expenseVal);
-    const massRate = Math.round(sfapi.parseFloatExt(massValue) / sfapi.parseFloatExt(amountValue));
-    amountData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(newAmountValue)).css('pointerEvents', 'none');
-    massData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(massRate * newAmountValue)).css('pointerEvents', 'none');
-    expenseData_jq.children('span').eq(0).css('pointerEvents', 'none');
+    const newAmount = -expenseVal < amountValue ? Math.round(amountValue + expenseVal) : 0;
+    if (newAmount) {
+      const massRate = Math.round(massValue / amountValue);
+      amountData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(newAmount)).css('pointerEvents', 'none');
+      massData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(massRate * newAmount)).css('pointerEvents', 'none');
+      expenseData_jq.children('span').eq(0).css('pointerEvents', 'none');
+      deplResRows += expenseVal < 0 ? 1 : 0;
+    }
+    else {
+      const thisRow_jq = amountData_jq.parent();
+      const prevRow = thisRow_jq.prev('tr.table_group_hdr')[0];
+      const nextRow = thisRow_jq.next('tr.table_group_hdr')[0];
+      thisRow_jq.remove();
+      // Если это был последний ресурс в группе - удаляем её заголовок
+      if (prevRow && nextRow)
+        prevRow.remove();
+    }
   });
+
+  // Обновляем хинт, если было уменьшение остатков
+  if (deplResRows > 0)
+    sfui.resRemainTime(wnd);
 }
 
 //Посчитываем занятый трюм флота

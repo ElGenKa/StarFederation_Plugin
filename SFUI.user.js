@@ -5395,7 +5395,7 @@ sfui.loadShipProjDataToBox = async (boxId) => {
   const tables_jq = wrapper.children().children('table');
   tables_jq.eq(1).width('auto');
   tables_jq.eq(2).width('auto');
-  
+
   // Вставляем проект в окно просмотра
   boxNode.replaceChildren(...projContainer.childNodes);
   sfui.diffCheckProjects();
@@ -7172,7 +7172,8 @@ sfdata.productions = [
     "id": "499",
     "buildOn": "83",
     "type": "module"
-  }];
+  }
+];
 //Задания
 sfdata.questions = [
   {

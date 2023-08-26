@@ -5373,158 +5373,161 @@ sfui.getShipProjectData = async (id) => {
   });
   return await data.text();
 }
-
-sfui.getShipProjectDataAndPasteToBox = async (boxId) => {
-  let box;
-  let id = -1;
+sfui.loadShipProjDataToBox = async (boxId) => {
+  let boxNode;
+  let projectId = -1;
   if (boxId === 1) {
-    box = $("#projectOneData");
-    id = $("#projectOneID").val();
+    boxNode = $('#projectOneData')[0];
+    projectId = $('#projectOneID').val();
   } else {
-    box = $("#projectTwoData");
-    id = $("#projectTwoID").val();
+    boxNode = $('#projectTwoData')[0];
+    projectId = $('#projectTwoID').val();
   }
-  let projectData = await sfui.getShipProjectData(id);
-  box.html(projectData);
+  const projContainer = document.createElement('div');
+  projContainer.innerHTML = await sfui.getShipProjectData(projectId);
 
-  let wrapper = box.find('.textcontainer-l');
+  // Модифицируем стурктуру, убирая всё лишнее и подгоняя внешний вид
+  const wrapper = $(projContainer).find('div.textcontainer-l');
+  wrapper.prev().remove();
+  wrapper.find('table').eq(1).remove();
+  wrapper.children().children('div.sep').eq(1).remove();
   wrapper.css('width', '493px').css('top', '0').css('height', '558px');
-  $(box.children()[0]).remove();
-  $(wrapper.find('table')[1]).remove();
-  $(wrapper.children().children('table')[1]).width('auto');
-  $(wrapper.children().children('table')[2]).width('auto');
-
+  const tables_jq = wrapper.children().children('table');
+  tables_jq.eq(1).width('auto');
+  tables_jq.eq(2).width('auto');
+  
+  // Вставляем проект в окно просмотра
+  boxNode.replaceChildren(...projContainer.childNodes);
   sfui.diffCheckProjects();
 }
-
 sfui.differQueryList = [];
-
 sfui.diffCheckProjects = () => {
-  if ($("#projectOneData").find('.textcontainer-l').length > 0 && $("#projectTwoData").find('.textcontainer-l').length > 0) {
-    let cModules1 = $("#projectOneData .noselect[style^='width:62px;height:62px;']");
-    let cModules2 = $("#projectTwoData .noselect[style^='width:62px;height:62px;']");
+  if ($("#projectOneData").find('.textcontainer-l').length < 1
+    || $("#projectTwoData").find('.textcontainer-l').length < 1)
+    return;
 
-    $("#oneProjectModulesCount").text(cModules1.length);
-    $("#twoProjectModulesCount").text(cModules2.length);
+  const cModules1 = $("#projectOneData .noselect[style^='width:62px;height:62px;']");
+  const cModules2 = $("#projectTwoData .noselect[style^='width:62px;height:62px;']");
 
-    //TODO: надо бы оптимизировать
-    let moulesOne = {};
-    let moulesTwo = {};
-    cModules1.each((i, e) => {
-      let eModule = $($(e).find('img')[0]);
-      let moduleTitle = eModule.data('hint').replaceAll("<br>", '');
-      let moduleName = moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}`)[0];
-      let moduleLvl = sfapi.parseIntExt(moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}.`)[1].split(' - ')[0]);
-      let moduleID = sfdata.productions.filter(e => e.name === moduleName)[0].id;
-      let moduleRace = moduleTitle.split("(")[1].split(")")[0];
-      if (!moulesOne['m' + moduleID]) {
-        moulesOne['m' + moduleID] = {};
-        moulesOne['m' + moduleID].lvls = {};
-        moulesOne['m' + moduleID].id = moduleID;
-        moulesOne['m' + moduleID].name = moduleName;
-        moulesOne['m' + moduleID].race = sfdata.races.filter(e => e.name === moduleRace)[0];
-      }
-      if (!moulesOne['m' + moduleID].lvls['l' + moduleLvl]) {
-        moulesOne['m' + moduleID].lvls['l' + moduleLvl] = {};
-        moulesOne['m' + moduleID].lvls['l' + moduleLvl].count = 0;
-      }
-      moulesOne['m' + moduleID].lvls['l' + moduleLvl].count += 1;
-    });
+  $("#oneProjectModulesCount").text(cModules1.length);
+  $("#twoProjectModulesCount").text(cModules2.length);
 
-    cModules2.each((i, e) => {
-      let eModule = $($(e).find('img')[0]);
-      let moduleTitle = eModule.data('hint').replaceAll("<br>", '');
-      let moduleName = moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}`)[0];
-      let moduleLvl = sfapi.parseIntExt(moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}.`)[1].split(' - ')[0]);
-      let moduleID = sfdata.productions.filter(e => e.name === moduleName)[0].id;
-      let moduleRace = moduleTitle.split("(")[1].split(")")[0];
-      if (!moulesTwo['m' + moduleID]) {
-        moulesTwo['m' + moduleID] = {};
-        moulesTwo['m' + moduleID].lvls = {};
-        moulesTwo['m' + moduleID].id = moduleID;
-        moulesTwo['m' + moduleID].name = moduleName;
-        moulesTwo['m' + moduleID].race = sfdata.races.filter(e => e.name === moduleRace)[0];
-      }
-      if (!moulesTwo['m' + moduleID].lvls['l' + moduleLvl]) {
-        moulesTwo['m' + moduleID].lvls['l' + moduleLvl] = {};
-        moulesTwo['m' + moduleID].lvls['l' + moduleLvl].count = 0;
-      }
-      moulesTwo['m' + moduleID].lvls['l' + moduleLvl].count += 1;
-    });
-
-    let needModeles = {};
-    let backModules = {};
-    for (let keyModule in moulesTwo) {
-      if (moulesOne[keyModule]) {
-        for (let keyLvl in moulesTwo[keyModule].lvls) {
-          if (moulesOne[keyModule].lvls[keyLvl]) {
-            if (moulesOne[keyModule].lvls[keyLvl].count !== moulesTwo[keyModule].lvls[keyLvl].count) {
-              let tempModuleCount = moulesTwo[keyModule].lvls[keyLvl].count - moulesOne[keyModule].lvls[keyLvl].count;
-              if (tempModuleCount < 0) {
-                if (!backModules[keyModule])
-                  backModules[keyModule] = {}
-                backModules[keyModule].id = keyModule;
-                backModules[keyModule].name = moulesTwo[keyModule].name;
-                backModules[keyModule].race = moulesTwo[keyModule].race;
-                if (!backModules[keyModule].lvls)
-                  backModules[keyModule].lvls = {}
-                if (!backModules[keyModule].lvls[keyLvl])
-                  backModules[keyModule].lvls[keyLvl] = {}
-                backModules[keyModule].lvls[keyLvl].count = 0
-                backModules[keyModule].lvls[keyLvl].count += (tempModuleCount * -1);
-              } else {
-                if (!needModeles[keyModule])
-                  needModeles[keyModule] = {}
-                needModeles[keyModule].id = keyModule;
-                needModeles[keyModule].name = moulesTwo[keyModule].name;
-                needModeles[keyModule].race = moulesTwo[keyModule].race;
-                if (!needModeles[keyModule].lvls)
-                  needModeles[keyModule].lvls = {}
-                if (!needModeles[keyModule].lvls[keyLvl])
-                  needModeles[keyModule].lvls[keyLvl] = {}
-                needModeles[keyModule].lvls[keyLvl].count = 0
-                needModeles[keyModule].lvls[keyLvl].count += tempModuleCount;
-              }
-            }
-          } else {
-            if (!needModeles[keyModule])
-              needModeles[keyModule] = {}
-            needModeles[keyModule].id = keyModule;
-            needModeles[keyModule].name = moulesTwo[keyModule].name;
-            needModeles[keyModule].race = moulesTwo[keyModule].race;
-            if (!needModeles[keyModule].lvls)
-              needModeles[keyModule].lvls = {}
-            if (!needModeles[keyModule].lvls[keyLvl])
-              needModeles[keyModule].lvls[keyLvl] = {}
-            needModeles[keyModule].lvls[keyLvl].count = 0
-
-            needModeles[keyModule].lvls[keyLvl].count = moulesTwo[keyModule].lvls[keyLvl].count;
-          }
-        }
-      } else {
-        if (!needModeles[keyModule])
-          needModeles[keyModule] = {}
-        needModeles[keyModule] = moulesTwo[keyModule];
-      }
+  //TODO: надо бы оптимизировать
+  let moulesOne = {};
+  let moulesTwo = {};
+  cModules1.each((i, e) => {
+    let eModule = $($(e).find('img')[0]);
+    let moduleTitle = eModule.data('hint').replaceAll("<br>", '');
+    let moduleName = moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}`)[0];
+    let moduleLvl = sfapi.parseIntExt(moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}.`)[1].split(' - ')[0]);
+    let moduleID = sfdata.productions.filter(e => e.name === moduleName)[0].id;
+    let moduleRace = moduleTitle.split("(")[1].split(")")[0];
+    if (!moulesOne['m' + moduleID]) {
+      moulesOne['m' + moduleID] = {};
+      moulesOne['m' + moduleID].lvls = {};
+      moulesOne['m' + moduleID].id = moduleID;
+      moulesOne['m' + moduleID].name = moduleName;
+      moulesOne['m' + moduleID].race = sfdata.races.filter(e => e.name === moduleRace)[0];
     }
+    if (!moulesOne['m' + moduleID].lvls['l' + moduleLvl]) {
+      moulesOne['m' + moduleID].lvls['l' + moduleLvl] = {};
+      moulesOne['m' + moduleID].lvls['l' + moduleLvl].count = 0;
+    }
+    moulesOne['m' + moduleID].lvls['l' + moduleLvl].count += 1;
+  });
 
-    let html = ``;
-    let queries = [];
-    for (let keyModule in needModeles) {
-      let moduleID = keyModule.replace('m', '');
-      for (let keyLvl in needModeles[keyModule].lvls) {
-        let lvl = keyLvl.replace("l", "");
-        html += `<div class='textcontainer-d' style=''>
+  cModules2.each((i, e) => {
+    let eModule = $($(e).find('img')[0]);
+    let moduleTitle = eModule.data('hint').replaceAll("<br>", '');
+    let moduleName = moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}`)[0];
+    let moduleLvl = sfapi.parseIntExt(moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}.`)[1].split(' - ')[0]);
+    let moduleID = sfdata.productions.filter(e => e.name === moduleName)[0].id;
+    let moduleRace = moduleTitle.split("(")[1].split(")")[0];
+    if (!moulesTwo['m' + moduleID]) {
+      moulesTwo['m' + moduleID] = {};
+      moulesTwo['m' + moduleID].lvls = {};
+      moulesTwo['m' + moduleID].id = moduleID;
+      moulesTwo['m' + moduleID].name = moduleName;
+      moulesTwo['m' + moduleID].race = sfdata.races.filter(e => e.name === moduleRace)[0];
+    }
+    if (!moulesTwo['m' + moduleID].lvls['l' + moduleLvl]) {
+      moulesTwo['m' + moduleID].lvls['l' + moduleLvl] = {};
+      moulesTwo['m' + moduleID].lvls['l' + moduleLvl].count = 0;
+    }
+    moulesTwo['m' + moduleID].lvls['l' + moduleLvl].count += 1;
+  });
+
+  let needModeles = {};
+  let backModules = {};
+  for (let keyModule in moulesTwo) {
+    if (moulesOne[keyModule]) {
+      for (let keyLvl in moulesTwo[keyModule].lvls) {
+        if (moulesOne[keyModule].lvls[keyLvl]) {
+          if (moulesOne[keyModule].lvls[keyLvl].count !== moulesTwo[keyModule].lvls[keyLvl].count) {
+            let tempModuleCount = moulesTwo[keyModule].lvls[keyLvl].count - moulesOne[keyModule].lvls[keyLvl].count;
+            if (tempModuleCount < 0) {
+              if (!backModules[keyModule])
+                backModules[keyModule] = {}
+              backModules[keyModule].id = keyModule;
+              backModules[keyModule].name = moulesTwo[keyModule].name;
+              backModules[keyModule].race = moulesTwo[keyModule].race;
+              if (!backModules[keyModule].lvls)
+                backModules[keyModule].lvls = {}
+              if (!backModules[keyModule].lvls[keyLvl])
+                backModules[keyModule].lvls[keyLvl] = {}
+              backModules[keyModule].lvls[keyLvl].count = 0
+              backModules[keyModule].lvls[keyLvl].count += (tempModuleCount * -1);
+            } else {
+              if (!needModeles[keyModule])
+                needModeles[keyModule] = {}
+              needModeles[keyModule].id = keyModule;
+              needModeles[keyModule].name = moulesTwo[keyModule].name;
+              needModeles[keyModule].race = moulesTwo[keyModule].race;
+              if (!needModeles[keyModule].lvls)
+                needModeles[keyModule].lvls = {}
+              if (!needModeles[keyModule].lvls[keyLvl])
+                needModeles[keyModule].lvls[keyLvl] = {}
+              needModeles[keyModule].lvls[keyLvl].count = 0
+              needModeles[keyModule].lvls[keyLvl].count += tempModuleCount;
+            }
+          }
+        } else {
+          if (!needModeles[keyModule])
+            needModeles[keyModule] = {}
+          needModeles[keyModule].id = keyModule;
+          needModeles[keyModule].name = moulesTwo[keyModule].name;
+          needModeles[keyModule].race = moulesTwo[keyModule].race;
+          if (!needModeles[keyModule].lvls)
+            needModeles[keyModule].lvls = {}
+          if (!needModeles[keyModule].lvls[keyLvl])
+            needModeles[keyModule].lvls[keyLvl] = {}
+          needModeles[keyModule].lvls[keyLvl].count = 0
+
+          needModeles[keyModule].lvls[keyLvl].count = moulesTwo[keyModule].lvls[keyLvl].count;
+        }
+      }
+    } else {
+      if (!needModeles[keyModule])
+        needModeles[keyModule] = {}
+      needModeles[keyModule] = moulesTwo[keyModule];
+    }
+  }
+
+  let html = '';
+  const queries = [];
+  for (const keyModule in needModeles) {
+    const moduleID = keyModule.replace('m', '');
+    for (const keyLvl in needModeles[keyModule].lvls) {
+      const lvl = keyLvl.replace("l", "");
+      html += `<div class='textcontainer-d' style=''>
         <div class="noselect" style="display: inline-block;width:12px;height:12px;border:1px solid ${needModeles[keyModule].race.color};background:${needModeles[keyModule].race.color};"><img oncontextmenu="return false" class="noselect" style="cursor:pointer;opacity:0.75;filter:alpha(opacity=75);" data-hint="" width="12px" height="12px" src="/images/productions/${moduleID}-16.png" onclick="sound_click(1);getWindow(&quot;WndHelp&quot;).show(&quot;id=Productions-${moduleID}:9&amp;level=${lvl}&quot;);"></div>
         <span style='font-size: 11px!important'><span style='color:${needModeles[keyModule].race.color}'>${needModeles[keyModule].name} ${sfapi.tlsCh(Number(lvl))}</span> x<span style='color:#73c95f'>${needModeles[keyModule].lvls[keyLvl].count}</span></span></div>`;
-        queries.push(`&prodtype=1&prodtype_new_value=false&raceid=${needModeles[keyModule].race.id}&raceid_new_value=false&prodid=${moduleID}&prodid_new_value=false&level=${lvl}&size=${needModeles[keyModule].lvls[keyLvl].count}`);
-      }
+      queries.push(`&prodtype=1&prodtype_new_value=false&raceid=${needModeles[keyModule].race.id}&raceid_new_value=false&prodid=${moduleID}&prodid_new_value=false&level=${lvl}&size=${needModeles[keyModule].lvls[keyLvl].count}`);
     }
-    $("#diffModulesListNeed").html(html);
-    sfui.differQueryList = queries;
   }
+  $("#diffModulesListNeed").html(html);
+  sfui.differQueryList = queries;
 }
-
 sfui.addToOrganizerByDiffer = async () => {
   if (!getWindow('WndOrganizer').isshow()) {
     getWindow('WndOrganizer').show();
@@ -5540,7 +5543,6 @@ sfui.addToOrganizerByDiffer = async () => {
   getWindow('WndOrganizer').end_load();
   getWindow('WndOrganizer').refresh();
 }
-
 sfui.convertDOMElemToCanvas = async (elem) => {
   return await html2canvas(elem, {
     logging: false,
@@ -5567,34 +5569,33 @@ sfui.saveDOMElemToClipboardAsImage = async (elem) => {
 }
 //  Argument 'side' should be True for the left-side project and False - for the right-side.
 sfui.diffChecker_ProjCopyAsImg = async (side) => {
-  let diffCheckerWnd = $(dhxWins.window("WndDiffChecker"));
-  let projElemIdString = `#project${side ? 'One' : 'Two'}Data`;
-  let projContainer = diffCheckerWnd.find(projElemIdString).children('div').children('div');
+  const diffCheckerWnd = $(dhxWins.window('WndDiffChecker'));
+  const projElemIdString = `#project${side ? 'One' : 'Two'}Data`;
+  const projContainer = diffCheckerWnd.find(projElemIdString).children('div').children('div');
   if (projContainer.length < 1)
     return;
   await sfui.saveDOMElemToClipboardAsImage(projContainer[0]);
 }
 sfui.shipProjInfo_ProjCopyAsImg = async () => {
-  let diffCheckerWnd = $(dhxWins.window("WndShipProjectInfo"));
-  let projContainer = diffCheckerWnd.find('.textcontainer-l').children('div');
+  const diffCheckerWnd = $(dhxWins.window('WndShipProjectInfo'));
+  const projContainer = diffCheckerWnd.find('.textcontainer-l').children('div');
   if (projContainer.length < 1)
     return;
-  let descrZone = $(projContainer.children('table')[1]);
-  let separator = $(projContainer.children('div.sep')[1]);
+  const descrZone = $(projContainer.children('table')[1]);
+  const separator = $(projContainer.children('div.sep')[1]);
   descrZone.hide();
   separator.hide();
   await sfui.saveDOMElemToClipboardAsImage(projContainer[0]);
   descrZone.show();
   separator.show();
 }
-
 sfui.openDiffChecker = () => {
   const html = `
   <div id='projectOne' class="textbox-d h-100" style="width: 505px;display: inline-block;">
     <div class='controlbox-d controls-center-row' style='width: 100%; padding: 4px;'>
       <span class="value_label mr4">${sfui_language.NUM_OF_FIRST_PROJECT}</span>
       <input autocomplete="off" type="text" class="inputText" style="height:26px;width:100px;" value="" id="projectOneID">
-      <button class="image_btn noselect" type="button" data-hint="${sfui_language.GET_PROJECT}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.getShipProjectDataAndPasteToBox(1)"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/flat/i-enter-1-16.png"></button>
+      <button class="image_btn noselect" type="button" data-hint="${sfui_language.GET_PROJECT}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.loadShipProjDataToBox(1)"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/flat/i-enter-1-16.png"></button>
       <button class="image_btn noselect" type="button" data-hint="${sfui_language.COPY_PROJ_AS_IMAGE}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.diffChecker_ProjCopyAsImg(true);"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/i_copy_16.png"></button>
     </div>
     <div id='projectOneData' style='position: relative;'>
@@ -5615,7 +5616,7 @@ sfui.openDiffChecker = () => {
     <div class='controlbox-d controls-center-row' style='width: 100%; padding: 4px;'>
       <span class="value_label mr4">${sfui_language.NUM_OF_SECOND_PROJECT}</span>
       <input autocomplete="off" type="text" class="inputText" style="height:26px;width:100px;" value="" id="projectTwoID">
-      <button class="image_btn noselect" type="button" data-hint="${sfui_language.GET_PROJECT}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.getShipProjectDataAndPasteToBox(2)"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/flat/i-enter-1-16.png"></button>
+      <button class="image_btn noselect" type="button" data-hint="${sfui_language.GET_PROJECT}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.loadShipProjDataToBox(2)"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/flat/i-enter-1-16.png"></button>
       <button class="image_btn noselect" type="button" data-hint="${sfui_language.COPY_PROJ_AS_IMAGE}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.diffChecker_ProjCopyAsImg(false);"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/i_copy_16.png"></button>
     </div>
     <div id='projectTwoData' style='position: relative;'>

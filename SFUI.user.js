@@ -5589,7 +5589,7 @@ sfui.shipProjInfo_ProjCopyAsImg = async () => {
 }
 
 sfui.openDiffChecker = () => {
-  html = `
+  const html = `
   <div id='projectOne' class="textbox-d h-100" style="width: 505px;display: inline-block;">
     <div class='controlbox-d controls-center-row' style='width: 100%; padding: 4px;'>
       <span class="value_label mr4">${sfui_language.NUM_OF_FIRST_PROJECT}</span>
@@ -5621,16 +5621,9 @@ sfui.openDiffChecker = () => {
     <div id='projectTwoData' style='position: relative;'>
     </div>
   </div>
-  `
+  `;
 
-  let winID = sfui.CreateWindow('WndDiffChecker',
-    1300,
-    650,
-    'Сравнить 2 проекта',
-    'i_planets_16.png',
-    html,
-    false,
-    true);
+  sfui.CreateWindow('WndDiffChecker', 1300, 650, 'Сравнить 2 проекта', 'i_planets_16.png', html, false, true);
 }
 
 // Игровые данные, некоторые рецепты.

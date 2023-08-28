@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         StarFederation UI MOD
-// @version      2.4d
+// @version      2.4e
 // @description  Улучшение игрового интерфейса и расширение функционала
 // @author       ElGen & woodser ( Discord: Ninada_O_o & woodser )
 // @match        *://*.starfederation.ru/*

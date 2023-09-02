@@ -10809,7 +10809,7 @@ sfapi.fleet = {
    */
   loadAll: async (projectid = 0, catid = 0, subcats = false, prodid = 0, raceid = 0, level = '-', size = '', maxweight = '', everyship = true, queryOnly) => {
     const body = {
-      idcmd: 11,
+      idcmd: 32,
       icmd: 'new',
       'data[projectid]': projectid,
       'data[catid]': catid,

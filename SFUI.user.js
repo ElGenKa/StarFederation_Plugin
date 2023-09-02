@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         StarFederation UI MOD
-// @version      2.4d
+// @version      2.4e
 // @description  Улучшение игрового интерфейса и расширение функционала
 // @author       ElGen & woodser ( Discord: Ninada_O_o & woodser )
 // @match        *://*.starfederation.ru/*
@@ -100,7 +100,7 @@ let sfui_language = {
   },
   AUTOMATION: {
     ru: 'Автоматизация',
-    en: ''
+    en: 'Automation'
   },
   BATTLES: {
     ru: 'Боевое',
@@ -139,24 +139,24 @@ let sfui_language = {
     ru: 'Макс. доступный уровень'
   },
   ADD_CMD_FLY: {
-    en: 'Add \"Flight\" command',
-    ru: 'Добавить команду полет'
+    en: 'Add \'Flight\' command',
+    ru: 'Добавить команду "Полет"'
   },
   ADD_CMD_JUMP: {
-    en: 'Add \"Space Jump\" Command',
-    ru: 'Добавить команду прыжок'
+    en: 'Add \'Space Jump\' Command',
+    ru: 'Добавить команду "Прыжок"'
   },
   ADD_CMD_UNLOAD_ALL: {
-    en: 'Add the command `flight, unload everything`',
-    ru: 'Добавить команду полет выгрузить все'
+    en: 'Add the command \'Flight, unload everything\'',
+    ru: 'Добавить команду "Полет, выгрузить все"'
   },
   ADD_CMD_UNLOAD_ALL_NO_FUEL: {
-    en: 'Add the command `flight, unload everything except fuel`',
-    ru: 'Добавить команду полет выгрузить все кроме топлива'
+    en: 'Add the command \'Flight, unload everything except fuel\'',
+    ru: 'Добавить команду "Полет, выгрузить все кроме топлива"'
   },
   ADD_CMD_FLY_UNLOAD: {
-    ru: 'Добавить команду полет выгрузить',
-    en: 'Add the command `flight, unload`'
+    en: 'Add the command \'Flight, unload\'',
+    ru: 'Добавить команду "Полет, выгрузить"'
   },
   INFO_SUMMARY: {
     en: 'Info Summary',
@@ -191,8 +191,12 @@ let sfui_language = {
     ru: 'трлн'
   },
   RES_TIME_REMAIN: {
-    en: 'Enough resources for',
-    ru: 'Ресурса хватит еще на'
+    en: 'Will end in',
+    ru: 'Закончится через'
+  },
+  RES_IS_DEPLETING: {
+    en: 'Resource will deplete in a minute',
+    ru: 'Ресурс закончится в течении минуты'
   },
   DAY_SHORT: {
     en: 'd',
@@ -221,7 +225,7 @@ let sfui_language = {
   },
   SELECT_COLONY: {
     en: 'Select Colony',
-    ru: "Выбрать колонию"
+    ru: 'Выбрать колонию'
   },
   UNLOAD: {
     en: 'Unload',
@@ -232,8 +236,8 @@ let sfui_language = {
     ru: 'Загрузить'
   },
   UNLOAD_NO_FUETL: {
-    en: 'Unload everything except fuel',
-    ru: 'Выгрузить все кроме топлива'
+    en: 'Unload all but fuel',
+    ru: 'Выгрузить все, кроме топлива'
   },
   UNLOAD_ALL: {
     en: 'Unload all',
@@ -296,27 +300,27 @@ let sfui_language = {
     ru: 'свободно'
   },
   SET_MAX_TECH: {
-    en: 'Installation of maximum technologies',
-    ru: 'Установка максимальных технологий'
+    en: 'Fill the \'Research\' field for technologies with their max. available levels',
+    ru: 'Заполниь поле "Изучить" для технологий их максимально доступными уровнями'
   },
   SORT_TECHS: {
-    en: 'Sort studied technologies by time',
+    en: 'Sort researching technologies by time',
     ru: 'Сортировать изучаемые технологии по времени'
   },
   MANY_BUILDINGS: {
-    en: 'Add to the tooltip when building how many buildings will fit',
-    ru: 'Добавить в подсказку при стройке сколько построек влезет'
+    en: 'Add a tooltip to buildings construction with their available quantity for each resource',
+    ru: 'Дополнить подсказку строительства зданий их доступным количеством по каждому ресурсу'
   },
   MANY_SHIPS: {
-    en: 'Add to the tooltip when building ships for how long the resource will last',
-    ru: 'Добавить в подсказку при постройке кораблей на сколько хватит ресурса'
+    en: 'Add a tooltip to ship construction with their available quantity for each resource',
+    ru: 'Дополнить подсказку постройки кораблей их доступным количеством по каждому ресурсу'
   },
   EXT_BTNS_ON_FLEET: {
-    en: 'Add fleetName_Span management buttons to colony selection window',
+    en: 'Add fleet management buttons to colony selection window',
     ru: 'Добавить кнопки управления флотом в окно выбора колонии'
   },
   EXT_BTNS_ON_EMPIRE_OVERVIEW: {
-    en: 'Add fleetName_Span management buttons in the empire overview window',
+    en: 'Add fleet management buttons in the empire overview window',
     ru: 'Добавить кнопки управления флотом в окне обзора империи'
   },
   ARCH_CENTER: {
@@ -332,11 +336,11 @@ let sfui_language = {
     en: 'Combat mesh'
   },
   ENOUGH_RES: {
-    en: 'Add a tooltip when hovering over resources with time for how many resources are enough',
-    ru: 'Добавить подсказку при наведении на ресурсы с временем на сколько хватит ресурсов'
+    en: 'Tooltip for hovering over a resource, showing its depletion time',
+    ru: 'Подсказка при наведении на ресурс, подказывающая время до его истощения'
   },
   CALC_FLEET_SPACE: {
-    en: 'Calculate how much resources take up in the fleetName_Span storage when loading',
+    en: 'Calculate how much resources take up in the fleet storage when loading',
     ru: 'Подсчитывать сколько занимают ресурсы в хранилище флота при погрузке'
   },
   SET_MAX_LVL_BUILDS: {
@@ -344,7 +348,7 @@ let sfui_language = {
     ru: 'Устанавливать максимальные уровни для улучшения построек на планете'
   },
   ADD_BTN_DROP_ALL_NO_FUEL: {
-    en: 'Add button in fleetName_Span management "unload everything but fuel"',
+    en: 'Add button in fleet management \'unload everything but fuel\'',
     ru: 'Добавить кнопку в управлении флотом "выгрузить все кроме топлива"'
   },
   USE_CUSTOM_BG: {
@@ -360,20 +364,20 @@ let sfui_language = {
     ru: 'Оптимизировать окошко новых сообщений'
   },
   DISPLAY_FLEET_NUM: {
-    en: 'Display open fleetName_Span number',
-    ru: 'Отображать № открытого флота'
+    en: 'Display open fleet number',
+    ru: 'Отображать номер открытого флота'
   },
   PLANET_TRANSFER: {
     ru: 'Функция развоза по планетам',
-    en: 'Planet delivery function'
+    en: 'To-planets delivery function'
   },
   AUTO_CALC_CREDIT_SALE: {
-    ru: 'Функция автоматического подсчета кредитов для продажи',
-    en: 'Function of automatic calculation of credits for sale'
+    ru: 'Автоматический подсчёт кредитов для продажи',
+    en: 'Automatic calculation of credits for sale'
   },
   SHRINKING_TC_ROWS: {
-    ru: 'Функция ужима строк в ТЦ',
-    en: 'The function of shrinking rows in the shopping center'
+    ru: 'Ужим строк в ТЦ',
+    en: 'Market\'s rows shrinking'
   },
   SHRINKING_SS_ROWS: {
     en: 'Line truncation feature in star system view',
@@ -448,7 +452,7 @@ let sfui_language = {
     ru: 'Считать время для производства модулей'
   },
   QUEST_ADD_BTN_LOAD: {
-    en: 'The button for loading materials in the task "Deliver materials to the Federation"',
+    en: 'The button for loading materials in the task \'Deliver materials to the Federation\'',
     ru: 'Кнопка погрузки материалов в задании "Доставить Федерации материалы"'
   },
   UD_CULTURAL_SET: {
@@ -536,7 +540,7 @@ let sfui_language = {
     ru: 'Загрузить проект'
   },
   COPY_PROJ_AS_IMAGE: {
-    en: 'Copy project as an image.',
+    en: 'Copy project\'s screenshot to clipboard',
     ru: 'Копировать скриншот проекта в буфер'
   },
   SAVE_TO_ORGANIZER: {
@@ -561,15 +565,15 @@ let sfui_language = {
   },
   FLIGHT_NUMBER: {
     en: 'Flight sheet number',
-    ru: '№ полетного листа'
+    ru: 'Номер полетного листа'
   },
   SMART_FLY_SETTINGS: {
-    en: 'Flight smart button settings',
-    ru: 'Настройки смарт кнопки полетника'
+    en: 'Smart-fly buttons settings',
+    ru: 'Настройки кнопок смарт-полётников'
   },
   SMART_FLEETS_SETTINGS: {
-    en: 'Fleet smart button settings',
-    ru: 'Настройки смарт кнопки флота'
+    en: 'Smart-fleets buttons settings',
+    ru: 'Настройки кнопок смарт-флотов'
   },
   DETAIL_FLEET_INFO: {
     en: 'Detailed information',
@@ -588,8 +592,8 @@ let sfui_language = {
     ru: 'Боевой рейтинг'
   },
   TEXT_BR_EX: {
-    en: 'Fleet  Battle Rating',
-    ru: 'Боевой рейтинг'
+    en: 'Fleet\'s Battle Rating',
+    ru: 'Боевой рейтинг флота'
   },
   TEXT_MISSLE_DEF: {
     en: 'Missile deflection (%)',
@@ -609,19 +613,19 @@ let sfui_language = {
   },
   APPLY_CMD_ON_ENTER: {
     ru: 'Применять команду в полетном листе на Enter (должно быть активно поле для ввода)',
-    en: 'Apply the command in the flight sheet to Enter (the input field must be active)'
-  },
-  ALLOW_RESIZE_BATTLE_WND_ANOTHER: {
-    en: "Allow resizing the battle window (viewing someone else's battle)",
-    ru: 'Разрешить изменять размер окна сражения (просмотр чужого боя)'
+    en: 'Apply the command in the flight sheet by Enter (the input field must be active)'
   },
   ALLOW_RESIZE_SELECT_TARGET_WND: {
-    en: 'Allow resizing the window for selecting targets for shooting',
-    ru: 'Разрешить изменять размер окна выбора целей для стрельбы'
+    en: 'Allow \'Selecting shooting targets\' window resizing',
+    ru: 'Разрешить изменять размер окна "Выбор целей для стрельбы"'
   },
   ALLOW_RESIZE_BATTLE_WINDOW: {
-    en: 'Allow resizing the battle window (your)',
+    en: 'Allow battle window resizing (own)',
     ru: 'Разрешить изменять размер окна сражения (вашего)'
+  },
+  ALLOW_RESIZE_BATTLE_WND_ANOTHER: {
+    en: "Allow battle window resizing (others)",
+    ru: 'Разрешить изменять размер окна сражения (просмотр чужого боя)'
   },
   ALLOW_RESIZE_CHAT_WND: {
     en: 'Allow chat window resizing',
@@ -633,7 +637,11 @@ let sfui_language = {
   },
   ALLOW_RESIZE_FLEET_WND: {
     ru: 'Разрешить изменять размер окна флота',
-    en: 'Allow resizing the float window'
+    en: 'Allow resizing the fleet window'
+  },
+  ADD_UNLOAD_BUTTONS: {
+    ru: 'Добавить кнопки выгрузки в окне флотов',
+    en: 'Add unload buttons into the fleets window'
   },
   DISPLAY_MAP_GATE: {
     ru: 'Отображать ближайшие врата на карте при правом клике',
@@ -641,7 +649,7 @@ let sfui_language = {
   },
   SORT_UD_SETS_FLEET: {
     ru: 'Сортировать сеты уд в просмотре флота',
-    en: 'Sort AD sets in fleetName_Span view'
+    en: 'Sort AD sets in fleet view'
   },
   SORT_UD_SETS_PLANET: {
     ru: 'Сортировать сеты уд в просмотре планеты',
@@ -668,7 +676,7 @@ let sfui_language = {
     ru: 'Добавить боевую сетку в окне просмотра боя'
   },
   ADD_LOAD_BUTTON_IN_DESIGN: {
-    en: 'Add a "load" button in the design window',
+    en: 'Add a \'load\' button in the design window',
     ru: 'Добавить кнопку "погрузить" в окне проектирования'
   },
   REMOVE_DISABLING_TABS: {
@@ -688,11 +696,11 @@ let sfui_language = {
     ru: 'Расширение функциональности окна просмотра флота'
   },
   FLEET_SHORTCAST_FLYS: {
-    en: 'Enable smart-fly-lists - a quick access to flight lists in the fleetName_Span management window',
+    en: 'Enable smart-fly-lists - a quick access to flight lists in the fleet management window',
     ru: 'Включить смарт-полётники - быстрый доступ к полетным листам в окне управления флотом'
   },
   FLEET_SHORTCAST_FLEETS: {
-    en: 'Enable smart-fleets - a quick access to fleets in the fleetName_Span management window\'s header',
+    en: 'Enable smart-fleets - a quick access to fleets in the fleet management window\'s header',
     ru: 'Включить смарт-флоты - быстрый доступ к флотам из заголовка окна управления флотом'
   },
   SAVE_PROJECT_AS_IMAGE: {
@@ -708,7 +716,7 @@ let sfui_language = {
     ru: 'Сравнить проекты'
   },
   SHOW_FLEET_BR_IN_FLEETS: {
-    en: 'Display fleetName_Span BR in fleetName_Span list',
+    en: 'Display fleet BR in the fleets list',
     ru: 'Отображать БР флота в списке флотов'
   },
   DO_NOT_UNLOAD_POP: {
@@ -733,7 +741,7 @@ let sfui_language = {
   },
   RUN_SCRIPT: {
     ru: 'Полетели',
-    en: 'Flew'
+    en: 'Takeoff'
   },
   RUN_WITH_CUR_SETTINGS: {
     en: 'Run with current settings',
@@ -744,16 +752,16 @@ let sfui_language = {
     ru: 'Настройки скрипта'
   },
   PLANET_TRANSFER_EMPIRE_SHOW: {
-    en: 'Transfer resources from "Empire show" - builds',
-    ru: 'Развоз ресурсов из просмотра империи (постройки)'
+    en: 'Transfer resources from \'Empire Overview - Buildings\'',
+    ru: 'Развоз ресурсов из "Просмотра Империи - Постройки"'
   },
   DELIVER_TO_PLANETS: {
     en: 'Deliver to the planets',
     ru: 'Развезти по планетам'
   },
   ENTER_FOR_SEARCH_MAP: {
-    en: 'Press Enter for search in star map',
-    ru: 'По нажатию Enter искать на звездной карте'
+    en: 'Search by Enter on the Star Map',
+    ru: 'Поиск по нажатию Enter на Звездной Карте'
   },
   EXT_SMART_COMMANDS: {
     en: '',
@@ -2118,7 +2126,7 @@ sfui.setMaxTech = function (wnd) {
 
 //Открытие окна просмотра планет, добавляем команды для флотов
 sfui.wndSelectPlanet = function (wnd) {
-  const title = $(wnd.container).find(".dhtmlx_wins_title")[0].innerText;
+  const title = $(wnd.win).find(".dhtmlx_wins_title")[0].innerText;
   if (title !== sfui_language.SELECT_COLONY)
     return;
 
@@ -2318,7 +2326,7 @@ sfui.externalCommandsInEmpire = function (wnd) {
 //Добавляем хинт на время до исчерпания ресурса
 sfui.resRemainTime = function (wnd) {
   const activeTab = wnd.activetab;
-  if (activeTab != "wp-materials" && activeTab != "wp-resourses")
+  if (activeTab !== "wp-materials" && activeTab !== "wp-resourses")
     return;
 
   let rows = $("tr[id^='WndPlanet_" + activeTab + "_row_']");
@@ -2331,10 +2339,12 @@ sfui.resRemainTime = function (wnd) {
 
     const amount = sfapi.parseIntExt(dataRows[i].innerText);
     const timeRemain = -(amount / demand);
-    const hintStr = `${sfui_language.RES_TIME_REMAIN} ${sfui_formatTimeFromHours(timeRemain)}`;
     const cell_Amount_jq = dataRows.eq(i);
     const cell_Mass_jq = dataRows.eq(i + 1);
     const cell_Demand_jq = dataRows.eq(i + 2);
+    const hintStr = (timeRemain * 60 <= 1) ? sfui_language.RES_IS_DEPLETING
+      : `${sfui_language.RES_TIME_REMAIN} ${sfui_formatTimeFromHours(timeRemain)}`;
+
     cell_Amount_jq.attr('data-hint', hintStr);
     cell_Amount_jq.children('span').first().css('pointerEvents', 'none');
     cell_Mass_jq.attr('data-hint', hintStr);
@@ -2343,8 +2353,8 @@ sfui.resRemainTime = function (wnd) {
     cell_Demand_jq.children('span').first().css('pointerEvents', 'none');
   }
 }
-//Добавляем хинт на время до исчерпания ресурса
-sfui.resAnimateChange = (wnd, delayMS) => {
+//Периодическое обновление остатка ресурсов/материалов на складе
+sfui.resAnimateChange = (wnd, msDelta) => {
   const activeTab = wnd.activetab;
 
   let rows = '';
@@ -2354,38 +2364,46 @@ sfui.resAnimateChange = (wnd, delayMS) => {
     rows = $(`[id^='WndPlanet_wp-resourses_row_']`);
   else return;
 
+  let deplResRows = 0; // Кол-во строк с истощающимся ресурсом
   Array.from(rows).forEach((e, i) => {
     const cellsData = $(e).find('td');
-    let amountValue = '';
-    let massValue = '';
-    let expenseValue = '';
-
     const expenseData_jq = cellsData.eq(5);
-    expenseValue = expenseData_jq.find('span.v-norm').data('hint') ?? cellsData[5].innerText;
-    const expenseVal = sfapi.parseFloatExt(expenseValue) / 3600 * (delayMS / 1000);
+    const span_Expense = expenseData_jq.find('span.v-norm[data-hint]')[0];
+    const expenseVal = sfapi.parseFloatExt(span_Expense ? span_Expense.dataset.hint
+      : expenseData_jq[0].innerText) / 3600 * (msDelta / 1000);
     if (!expenseVal)
       return;
 
     const amountData_jq = cellsData.eq(3);
-    const span_Amount_jq = amountData_jq.find('span.v-norm');
-    if (span_Amount_jq.data('hint'))
-      amountValue = span_Amount_jq[0].dataset.hint ?? span_Amount_jq[1].dataset.hint
-    else
-      amountValue = cellsData[3].innerText;
+    const span_Amount = amountData_jq.find('span.v-norm[data-hint]')[0];
+    const amountValue = sfapi.parseFloatExt(span_Amount ? span_Amount.dataset.hint : amountData_jq[0].innerText);
 
     const massData_jq = cellsData.eq(4);
-    const span_Mass_jq = cellsData.eq(4).find('span.v-norm');
-    if (span_Mass_jq.data('hint'))
-      massValue = span_Mass_jq[0].dataset.hint ?? span_Mass_jq[1].dataset.hint;
-    else
-      massValue = cellsData[4].innerText;
+    const span_Mass = massData_jq.find('span.v-norm[data-hint]')[0];
+    const massValue = sfapi.parseFloatExt(span_Mass ? span_Mass.dataset.hint : massData_jq[0].innerText);
 
-    const newAmountValue = Math.round(sfapi.parseFloatExt(amountValue) + expenseVal);
-    const massRate = Math.round(sfapi.parseFloatExt(massValue) / sfapi.parseFloatExt(amountValue));
-    amountData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(newAmountValue)).css('pointerEvents', 'none');
-    massData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(massRate * newAmountValue)).css('pointerEvents', 'none');
-    expenseData_jq.children('span').eq(0).css('pointerEvents', 'none');
+    const newAmount = -expenseVal < amountValue ? Math.round(amountValue + expenseVal) : 0;
+    if (newAmount) {
+      const massRate = Math.round(massValue / amountValue);
+      amountData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(newAmount)).css('pointerEvents', 'none');
+      massData_jq.children('span').eq(0).html(sfapi.wrapToGameValue(massRate * newAmount)).css('pointerEvents', 'none');
+      expenseData_jq.children('span').eq(0).css('pointerEvents', 'none');
+      deplResRows += expenseVal < 0 ? 1 : 0;
+    }
+    else {
+      const thisRow_jq = amountData_jq.parent();
+      const prevRow = thisRow_jq.prev('tr.table_group_hdr')[0];
+      const nextRow = thisRow_jq.next('tr.table_group_hdr')[0];
+      thisRow_jq.remove();
+      // Если это был последний ресурс в группе - удаляем её заголовок
+      if (prevRow && nextRow)
+        prevRow.remove();
+    }
   });
+
+  // Обновляем хинт, если было уменьшение остатков
+  if (deplResRows > 0)
+    sfui.resRemainTime(wnd);
 }
 
 //Посчитываем занятый трюм флота
@@ -3676,7 +3694,7 @@ sfui.pushPlugins([
     group: pluginsGroups.fleet.id,
     code: 'wndFleetsUnloadButtons',
     type: 'bool',
-    title: 'Добавить кнопки выгрузки в окне флотов',
+    title: sfui_language.ADD_UNLOAD_BUTTONS,
     wndCondition: 'WndFleets',
     callback: async () => {
       const wnd = getWindow("WndFleets");
@@ -5355,158 +5373,161 @@ sfui.getShipProjectData = async (id) => {
   });
   return await data.text();
 }
-
-sfui.getShipProjectDataAndPasteToBox = async (boxId) => {
-  let box;
-  let id = -1;
+sfui.loadShipProjDataToBox = async (boxId) => {
+  let boxNode;
+  let projectId = -1;
   if (boxId === 1) {
-    box = $("#projectOneData");
-    id = $("#projectOneID").val();
+    boxNode = $('#projectOneData')[0];
+    projectId = $('#projectOneID').val();
   } else {
-    box = $("#projectTwoData");
-    id = $("#projectTwoID").val();
+    boxNode = $('#projectTwoData')[0];
+    projectId = $('#projectTwoID').val();
   }
-  let projectData = await sfui.getShipProjectData(id);
-  box.html(projectData);
+  const projContainer = document.createElement('div');
+  projContainer.innerHTML = await sfui.getShipProjectData(projectId);
 
-  let wrapper = box.find('.textcontainer-l');
+  // Модифицируем стурктуру, убирая всё лишнее и подгоняя внешний вид
+  const wrapper = $(projContainer).find('div.textcontainer-l');
+  wrapper.prev().remove();
+  wrapper.find('table').eq(1).remove();
+  wrapper.children().children('div.sep').eq(1).remove();
   wrapper.css('width', '493px').css('top', '0').css('height', '558px');
-  $(box.children()[0]).remove();
-  $(wrapper.find('table')[1]).remove();
-  $(wrapper.children().children('table')[1]).width('auto');
-  $(wrapper.children().children('table')[2]).width('auto');
+  const tables_jq = wrapper.children().children('table');
+  tables_jq.eq(1).width('auto');
+  tables_jq.eq(2).width('auto');
 
+  // Вставляем проект в окно просмотра
+  boxNode.replaceChildren(...projContainer.childNodes);
   sfui.diffCheckProjects();
 }
-
 sfui.differQueryList = [];
-
 sfui.diffCheckProjects = () => {
-  if ($("#projectOneData").find('.textcontainer-l').length > 0 && $("#projectTwoData").find('.textcontainer-l').length > 0) {
-    let cModules1 = $("#projectOneData .noselect[style^='width:62px;height:62px;']");
-    let cModules2 = $("#projectTwoData .noselect[style^='width:62px;height:62px;']");
+  if ($("#projectOneData").find('.textcontainer-l').length < 1
+    || $("#projectTwoData").find('.textcontainer-l').length < 1)
+    return;
 
-    $("#oneProjectModulesCount").text(cModules1.length);
-    $("#twoProjectModulesCount").text(cModules2.length);
+  const cModules1 = $("#projectOneData .noselect[style^='width:62px;height:62px;']");
+  const cModules2 = $("#projectTwoData .noselect[style^='width:62px;height:62px;']");
 
-    //TODO: надо бы оптимизировать
-    let moulesOne = {};
-    let moulesTwo = {};
-    cModules1.each((i, e) => {
-      let eModule = $($(e).find('img')[0]);
-      let moduleTitle = eModule.data('hint').replaceAll("<br>", '');
-      let moduleName = moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}`)[0];
-      let moduleLvl = sfapi.parseIntExt(moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}.`)[1].split(' - ')[0]);
-      let moduleID = sfdata.productions.filter(e => e.name === moduleName)[0].id;
-      let moduleRace = moduleTitle.split("(")[1].split(")")[0];
-      if (!moulesOne['m' + moduleID]) {
-        moulesOne['m' + moduleID] = {};
-        moulesOne['m' + moduleID].lvls = {};
-        moulesOne['m' + moduleID].id = moduleID;
-        moulesOne['m' + moduleID].name = moduleName;
-        moulesOne['m' + moduleID].race = sfdata.races.filter(e => e.name === moduleRace)[0];
-      }
-      if (!moulesOne['m' + moduleID].lvls['l' + moduleLvl]) {
-        moulesOne['m' + moduleID].lvls['l' + moduleLvl] = {};
-        moulesOne['m' + moduleID].lvls['l' + moduleLvl].count = 0;
-      }
-      moulesOne['m' + moduleID].lvls['l' + moduleLvl].count += 1;
-    });
+  $("#oneProjectModulesCount").text(cModules1.length);
+  $("#twoProjectModulesCount").text(cModules2.length);
 
-    cModules2.each((i, e) => {
-      let eModule = $($(e).find('img')[0]);
-      let moduleTitle = eModule.data('hint').replaceAll("<br>", '');
-      let moduleName = moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}`)[0];
-      let moduleLvl = sfapi.parseIntExt(moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}.`)[1].split(' - ')[0]);
-      let moduleID = sfdata.productions.filter(e => e.name === moduleName)[0].id;
-      let moduleRace = moduleTitle.split("(")[1].split(")")[0];
-      if (!moulesTwo['m' + moduleID]) {
-        moulesTwo['m' + moduleID] = {};
-        moulesTwo['m' + moduleID].lvls = {};
-        moulesTwo['m' + moduleID].id = moduleID;
-        moulesTwo['m' + moduleID].name = moduleName;
-        moulesTwo['m' + moduleID].race = sfdata.races.filter(e => e.name === moduleRace)[0];
-      }
-      if (!moulesTwo['m' + moduleID].lvls['l' + moduleLvl]) {
-        moulesTwo['m' + moduleID].lvls['l' + moduleLvl] = {};
-        moulesTwo['m' + moduleID].lvls['l' + moduleLvl].count = 0;
-      }
-      moulesTwo['m' + moduleID].lvls['l' + moduleLvl].count += 1;
-    });
-
-    let needModeles = {};
-    let backModules = {};
-    for (let keyModule in moulesTwo) {
-      if (moulesOne[keyModule]) {
-        for (let keyLvl in moulesTwo[keyModule].lvls) {
-          if (moulesOne[keyModule].lvls[keyLvl]) {
-            if (moulesOne[keyModule].lvls[keyLvl].count !== moulesTwo[keyModule].lvls[keyLvl].count) {
-              let tempModuleCount = moulesTwo[keyModule].lvls[keyLvl].count - moulesOne[keyModule].lvls[keyLvl].count;
-              if (tempModuleCount < 0) {
-                if (!backModules[keyModule])
-                  backModules[keyModule] = {}
-                backModules[keyModule].id = keyModule;
-                backModules[keyModule].name = moulesTwo[keyModule].name;
-                backModules[keyModule].race = moulesTwo[keyModule].race;
-                if (!backModules[keyModule].lvls)
-                  backModules[keyModule].lvls = {}
-                if (!backModules[keyModule].lvls[keyLvl])
-                  backModules[keyModule].lvls[keyLvl] = {}
-                backModules[keyModule].lvls[keyLvl].count = 0
-                backModules[keyModule].lvls[keyLvl].count += (tempModuleCount * -1);
-              } else {
-                if (!needModeles[keyModule])
-                  needModeles[keyModule] = {}
-                needModeles[keyModule].id = keyModule;
-                needModeles[keyModule].name = moulesTwo[keyModule].name;
-                needModeles[keyModule].race = moulesTwo[keyModule].race;
-                if (!needModeles[keyModule].lvls)
-                  needModeles[keyModule].lvls = {}
-                if (!needModeles[keyModule].lvls[keyLvl])
-                  needModeles[keyModule].lvls[keyLvl] = {}
-                needModeles[keyModule].lvls[keyLvl].count = 0
-                needModeles[keyModule].lvls[keyLvl].count += tempModuleCount;
-              }
-            }
-          } else {
-            if (!needModeles[keyModule])
-              needModeles[keyModule] = {}
-            needModeles[keyModule].id = keyModule;
-            needModeles[keyModule].name = moulesTwo[keyModule].name;
-            needModeles[keyModule].race = moulesTwo[keyModule].race;
-            if (!needModeles[keyModule].lvls)
-              needModeles[keyModule].lvls = {}
-            if (!needModeles[keyModule].lvls[keyLvl])
-              needModeles[keyModule].lvls[keyLvl] = {}
-            needModeles[keyModule].lvls[keyLvl].count = 0
-
-            needModeles[keyModule].lvls[keyLvl].count = moulesTwo[keyModule].lvls[keyLvl].count;
-          }
-        }
-      } else {
-        if (!needModeles[keyModule])
-          needModeles[keyModule] = {}
-        needModeles[keyModule] = moulesTwo[keyModule];
-      }
+  //TODO: надо бы оптимизировать
+  let moulesOne = {};
+  let moulesTwo = {};
+  cModules1.each((i, e) => {
+    let eModule = $($(e).find('img')[0]);
+    let moduleTitle = eModule.data('hint').replaceAll("<br>", '');
+    let moduleName = moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}`)[0];
+    let moduleLvl = sfapi.parseIntExt(moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}.`)[1].split(' - ')[0]);
+    let moduleID = sfdata.productions.filter(e => e.name === moduleName)[0].id;
+    let moduleRace = moduleTitle.split("(")[1].split(")")[0];
+    if (!moulesOne['m' + moduleID]) {
+      moulesOne['m' + moduleID] = {};
+      moulesOne['m' + moduleID].lvls = {};
+      moulesOne['m' + moduleID].id = moduleID;
+      moulesOne['m' + moduleID].name = moduleName;
+      moulesOne['m' + moduleID].race = sfdata.races.filter(e => e.name === moduleRace)[0];
     }
+    if (!moulesOne['m' + moduleID].lvls['l' + moduleLvl]) {
+      moulesOne['m' + moduleID].lvls['l' + moduleLvl] = {};
+      moulesOne['m' + moduleID].lvls['l' + moduleLvl].count = 0;
+    }
+    moulesOne['m' + moduleID].lvls['l' + moduleLvl].count += 1;
+  });
 
-    let html = ``;
-    let queries = [];
-    for (let keyModule in needModeles) {
-      let moduleID = keyModule.replace('m', '');
-      for (let keyLvl in needModeles[keyModule].lvls) {
-        let lvl = keyLvl.replace("l", "");
-        html += `<div class='textcontainer-d' style=''>
+  cModules2.each((i, e) => {
+    let eModule = $($(e).find('img')[0]);
+    let moduleTitle = eModule.data('hint').replaceAll("<br>", '');
+    let moduleName = moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}`)[0];
+    let moduleLvl = sfapi.parseIntExt(moduleTitle.split(` ${sfui_language.SHORT_STR_LVL}.`)[1].split(' - ')[0]);
+    let moduleID = sfdata.productions.filter(e => e.name === moduleName)[0].id;
+    let moduleRace = moduleTitle.split("(")[1].split(")")[0];
+    if (!moulesTwo['m' + moduleID]) {
+      moulesTwo['m' + moduleID] = {};
+      moulesTwo['m' + moduleID].lvls = {};
+      moulesTwo['m' + moduleID].id = moduleID;
+      moulesTwo['m' + moduleID].name = moduleName;
+      moulesTwo['m' + moduleID].race = sfdata.races.filter(e => e.name === moduleRace)[0];
+    }
+    if (!moulesTwo['m' + moduleID].lvls['l' + moduleLvl]) {
+      moulesTwo['m' + moduleID].lvls['l' + moduleLvl] = {};
+      moulesTwo['m' + moduleID].lvls['l' + moduleLvl].count = 0;
+    }
+    moulesTwo['m' + moduleID].lvls['l' + moduleLvl].count += 1;
+  });
+
+  let needModeles = {};
+  let backModules = {};
+  for (let keyModule in moulesTwo) {
+    if (moulesOne[keyModule]) {
+      for (let keyLvl in moulesTwo[keyModule].lvls) {
+        if (moulesOne[keyModule].lvls[keyLvl]) {
+          if (moulesOne[keyModule].lvls[keyLvl].count !== moulesTwo[keyModule].lvls[keyLvl].count) {
+            let tempModuleCount = moulesTwo[keyModule].lvls[keyLvl].count - moulesOne[keyModule].lvls[keyLvl].count;
+            if (tempModuleCount < 0) {
+              if (!backModules[keyModule])
+                backModules[keyModule] = {}
+              backModules[keyModule].id = keyModule;
+              backModules[keyModule].name = moulesTwo[keyModule].name;
+              backModules[keyModule].race = moulesTwo[keyModule].race;
+              if (!backModules[keyModule].lvls)
+                backModules[keyModule].lvls = {}
+              if (!backModules[keyModule].lvls[keyLvl])
+                backModules[keyModule].lvls[keyLvl] = {}
+              backModules[keyModule].lvls[keyLvl].count = 0
+              backModules[keyModule].lvls[keyLvl].count += (tempModuleCount * -1);
+            } else {
+              if (!needModeles[keyModule])
+                needModeles[keyModule] = {}
+              needModeles[keyModule].id = keyModule;
+              needModeles[keyModule].name = moulesTwo[keyModule].name;
+              needModeles[keyModule].race = moulesTwo[keyModule].race;
+              if (!needModeles[keyModule].lvls)
+                needModeles[keyModule].lvls = {}
+              if (!needModeles[keyModule].lvls[keyLvl])
+                needModeles[keyModule].lvls[keyLvl] = {}
+              needModeles[keyModule].lvls[keyLvl].count = 0
+              needModeles[keyModule].lvls[keyLvl].count += tempModuleCount;
+            }
+          }
+        } else {
+          if (!needModeles[keyModule])
+            needModeles[keyModule] = {}
+          needModeles[keyModule].id = keyModule;
+          needModeles[keyModule].name = moulesTwo[keyModule].name;
+          needModeles[keyModule].race = moulesTwo[keyModule].race;
+          if (!needModeles[keyModule].lvls)
+            needModeles[keyModule].lvls = {}
+          if (!needModeles[keyModule].lvls[keyLvl])
+            needModeles[keyModule].lvls[keyLvl] = {}
+          needModeles[keyModule].lvls[keyLvl].count = 0
+
+          needModeles[keyModule].lvls[keyLvl].count = moulesTwo[keyModule].lvls[keyLvl].count;
+        }
+      }
+    } else {
+      if (!needModeles[keyModule])
+        needModeles[keyModule] = {}
+      needModeles[keyModule] = moulesTwo[keyModule];
+    }
+  }
+
+  let html = '';
+  const queries = [];
+  for (const keyModule in needModeles) {
+    const moduleID = keyModule.replace('m', '');
+    for (const keyLvl in needModeles[keyModule].lvls) {
+      const lvl = keyLvl.replace("l", "");
+      html += `<div class='textcontainer-d' style=''>
         <div class="noselect" style="display: inline-block;width:12px;height:12px;border:1px solid ${needModeles[keyModule].race.color};background:${needModeles[keyModule].race.color};"><img oncontextmenu="return false" class="noselect" style="cursor:pointer;opacity:0.75;filter:alpha(opacity=75);" data-hint="" width="12px" height="12px" src="/images/productions/${moduleID}-16.png" onclick="sound_click(1);getWindow(&quot;WndHelp&quot;).show(&quot;id=Productions-${moduleID}:9&amp;level=${lvl}&quot;);"></div>
         <span style='font-size: 11px!important'><span style='color:${needModeles[keyModule].race.color}'>${needModeles[keyModule].name} ${sfapi.tlsCh(Number(lvl))}</span> x<span style='color:#73c95f'>${needModeles[keyModule].lvls[keyLvl].count}</span></span></div>`;
-        queries.push(`&prodtype=1&prodtype_new_value=false&raceid=${needModeles[keyModule].race.id}&raceid_new_value=false&prodid=${moduleID}&prodid_new_value=false&level=${lvl}&size=${needModeles[keyModule].lvls[keyLvl].count}`);
-      }
+      queries.push(`&prodtype=1&prodtype_new_value=false&raceid=${needModeles[keyModule].race.id}&raceid_new_value=false&prodid=${moduleID}&prodid_new_value=false&level=${lvl}&size=${needModeles[keyModule].lvls[keyLvl].count}`);
     }
-    $("#diffModulesListNeed").html(html);
-    sfui.differQueryList = queries;
   }
+  $("#diffModulesListNeed").html(html);
+  sfui.differQueryList = queries;
 }
-
 sfui.addToOrganizerByDiffer = async () => {
   if (!getWindow('WndOrganizer').isshow()) {
     getWindow('WndOrganizer').show();
@@ -5522,7 +5543,6 @@ sfui.addToOrganizerByDiffer = async () => {
   getWindow('WndOrganizer').end_load();
   getWindow('WndOrganizer').refresh();
 }
-
 sfui.convertDOMElemToCanvas = async (elem) => {
   return await html2canvas(elem, {
     logging: false,
@@ -5549,34 +5569,33 @@ sfui.saveDOMElemToClipboardAsImage = async (elem) => {
 }
 //  Argument 'side' should be True for the left-side project and False - for the right-side.
 sfui.diffChecker_ProjCopyAsImg = async (side) => {
-  let diffCheckerWnd = $(dhxWins.window("WndDiffChecker"));
-  let projElemIdString = `#project${side ? 'One' : 'Two'}Data`;
-  let projContainer = diffCheckerWnd.find(projElemIdString).children('div').children('div');
+  const diffCheckerWnd = $(dhxWins.window('WndDiffChecker'));
+  const projElemIdString = `#project${side ? 'One' : 'Two'}Data`;
+  const projContainer = diffCheckerWnd.find(projElemIdString).children('div').children('div');
   if (projContainer.length < 1)
     return;
   await sfui.saveDOMElemToClipboardAsImage(projContainer[0]);
 }
 sfui.shipProjInfo_ProjCopyAsImg = async () => {
-  let diffCheckerWnd = $(dhxWins.window("WndShipProjectInfo"));
-  let projContainer = diffCheckerWnd.find('.textcontainer-l').children('div');
+  const diffCheckerWnd = $(dhxWins.window('WndShipProjectInfo'));
+  const projContainer = diffCheckerWnd.find('.textcontainer-l').children('div');
   if (projContainer.length < 1)
     return;
-  let descrZone = $(projContainer.children('table')[1]);
-  let separator = $(projContainer.children('div.sep')[1]);
+  const descrZone = $(projContainer.children('table')[1]);
+  const separator = $(projContainer.children('div.sep')[1]);
   descrZone.hide();
   separator.hide();
   await sfui.saveDOMElemToClipboardAsImage(projContainer[0]);
   descrZone.show();
   separator.show();
 }
-
 sfui.openDiffChecker = () => {
-  html = `
+  const html = `
   <div id='projectOne' class="textbox-d h-100" style="width: 505px;display: inline-block;">
     <div class='controlbox-d controls-center-row' style='width: 100%; padding: 4px;'>
       <span class="value_label mr4">${sfui_language.NUM_OF_FIRST_PROJECT}</span>
       <input autocomplete="off" type="text" class="inputText" style="height:26px;width:100px;" value="" id="projectOneID">
-      <button class="image_btn noselect" type="button" data-hint="${sfui_language.GET_PROJECT}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.getShipProjectDataAndPasteToBox(1)"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/flat/i-enter-1-16.png"></button>
+      <button class="image_btn noselect" type="button" data-hint="${sfui_language.GET_PROJECT}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.loadShipProjDataToBox(1)"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/flat/i-enter-1-16.png"></button>
       <button class="image_btn noselect" type="button" data-hint="${sfui_language.COPY_PROJ_AS_IMAGE}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.diffChecker_ProjCopyAsImg(true);"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/i_copy_16.png"></button>
     </div>
     <div id='projectOneData' style='position: relative;'>
@@ -5597,22 +5616,15 @@ sfui.openDiffChecker = () => {
     <div class='controlbox-d controls-center-row' style='width: 100%; padding: 4px;'>
       <span class="value_label mr4">${sfui_language.NUM_OF_SECOND_PROJECT}</span>
       <input autocomplete="off" type="text" class="inputText" style="height:26px;width:100px;" value="" id="projectTwoID">
-      <button class="image_btn noselect" type="button" data-hint="${sfui_language.GET_PROJECT}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.getShipProjectDataAndPasteToBox(2)"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/flat/i-enter-1-16.png"></button>
+      <button class="image_btn noselect" type="button" data-hint="${sfui_language.GET_PROJECT}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.loadShipProjDataToBox(2)"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/flat/i-enter-1-16.png"></button>
       <button class="image_btn noselect" type="button" data-hint="${sfui_language.COPY_PROJ_AS_IMAGE}" style="width:28px;height:28px;" onclick="sound_click(2); sfui.diffChecker_ProjCopyAsImg(false);"><img oncontextmenu="return false;" class="noselect" border="0" src="/images/icons/i_copy_16.png"></button>
     </div>
     <div id='projectTwoData' style='position: relative;'>
     </div>
   </div>
-  `
+  `;
 
-  let winID = sfui.CreateWindow('WndDiffChecker',
-    1300,
-    650,
-    'Сравнить 2 проекта',
-    'i_planets_16.png',
-    html,
-    false,
-    true);
+  sfui.CreateWindow('WndDiffChecker', 1300, 650, 'Сравнить 2 проекта', 'i_planets_16.png', html, false, true);
 }
 
 // Игровые данные, некоторые рецепты.
@@ -7160,7 +7172,8 @@ sfdata.productions = [
     "id": "499",
     "buildOn": "83",
     "type": "module"
-  }];
+  }
+];
 //Задания
 sfdata.questions = [
   {

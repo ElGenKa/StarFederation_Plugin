@@ -10587,7 +10587,7 @@ sfapi.fleet = {
       return false;
 
     const body = {
-      idcmd: 14,
+      idcmd: 5,
       icmd: 'new',
       'data[projectid]': project,
       'data[prodid]': id,
@@ -10783,7 +10783,7 @@ sfapi.fleet = {
    * @return {Promise<boolean|*>}
    */
   unloadAll: async (arrayStorageItems, queryOnly = false) => {
-    if (!Array.isArray(arrayStorageItems) || arrayStorageItems.length === 0)
+    if (!Array.isArray(arrayStorageItems))
       return false;
 
     const body = {

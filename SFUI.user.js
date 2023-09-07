@@ -2213,43 +2213,45 @@ sfui.addMaxBuildsCount = function (wnd) {
     if (!hintDataNode)
       return;
 
+    let minAvailAmount = Number.POSITIVE_INFINITY;
+
     const rows = hintDataNode.children[0].rows;
     const firstRow = rows[0];
-    const cellUse = sfapi.parseIntExt(firstRow.cells[2].innerText);
-    const cellFree = sfapi.parseIntExt(firstRow.cells[3].innerText);
-    const cellsGo = Math.floor(cellFree / cellUse);
-    firstRow.cells[2].innerText = cellUse + " (" + cellsGo + ")";
-
-    let elementForMaxBuilds = rows[0];
-    let minBuilds = cellsGo;
-    for (let i = 1; i < rows.length; ++i) {
-      const row = rows[i];
-      try {
-        const tdr = row.cells;
-        const name = tdr[1].innerText;
-        const need = tdr[2];
-        const amount = tdr[3];
-        const minTdr = Math.floor(sfapi.parseIntExt(amount.innerText) / sfapi.parseIntExt(need.innerText));
-        if (name !== sfui_language.POPULATION && minTdr < minBuilds)
-          minBuilds = minTdr;
-
-        const newCell = document.createElement('td');
-        newCell.classList.add('value', 'text10', 'w60');
-        newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_BLDS;
-        newCell.appendChild(document.createTextNode(sfapi.tls(minTdr).toString()));
-        row.appendChild(newCell);
-      } catch (e) { }
+    const buildReqSpace = firstRow.cells.length > 3;
+    if (buildReqSpace) {
+      const cellReq = sfapi.parseIntExt(firstRow.cells[2].innerText);
+      const cellFree = sfapi.parseIntExt(firstRow.cells[3].innerText);
+      minAvailAmount = cellFree > 0 ? Math.floor(cellFree / cellReq) : 0;
+      firstRow.cells[2].innerText = cellReq + " (" + minAvailAmount + ")";
     }
 
-    if (!elementForMaxBuilds)
-      return;
+    for (let i = 1; i < rows.length; ++i) {
+      const row = rows[i];
+      if (row.cells.length < 4)
+        continue;
 
-    let newCell = document.createElement('td');
+      const tdr = row.cells;
+      const name = tdr[1].innerText;
+      const need = tdr[2];
+      const amount = tdr[3];
+      const availAmount = Math.floor(sfapi.parseIntExt(amount.innerText) / sfapi.parseIntExt(need.innerText));
+      if (name !== sfui_language.POPULATION && availAmount < minAvailAmount)
+        minAvailAmount = availAmount;
+
+      const newCell = document.createElement('td');
+      newCell.classList.add('value', 'text10', 'w60');
+      newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_BLDS;
+      newCell.appendChild(document.createTextNode(sfapi.tls(availAmount).toString()));
+      row.appendChild(newCell);
+    }
+
+    const newCell = document.createElement('td');
     newCell.classList.add('value', 'text10', 'w60');
     newCell.dataset.hint = sfui_language.ENOUGH_RES_FOR_BLDS;
-    newCell.setAttribute('rowspan', '2');
-    newCell.appendChild(document.createTextNode(sfapi.tls(minBuilds).toString()));
-    elementForMaxBuilds.appendChild(newCell);
+    newCell.appendChild(document.createTextNode(sfapi.tls(minAvailAmount).toString()));
+    if (buildReqSpace)
+      newCell.setAttribute('rowspan', '2');
+    firstRow.appendChild(newCell);
   });
 
   parentNode_jq[0].dataset.maxBuildsCounted = true;

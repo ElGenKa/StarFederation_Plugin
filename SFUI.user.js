@@ -10593,7 +10593,7 @@ sfapi.fleet = {
       return false;
 
     const body = {
-      idcmd: 14,
+      idcmd: 5,
       icmd: 'new',
       'data[projectid]': project,
       'data[prodid]': id,
@@ -10789,7 +10789,7 @@ sfapi.fleet = {
    * @return {Promise<boolean|*>}
    */
   unloadAll: async (arrayStorageItems, queryOnly = false) => {
-    if (!Array.isArray(arrayStorageItems) || arrayStorageItems.length === 0)
+    if (!Array.isArray(arrayStorageItems))
       return false;
 
     const body = {
@@ -10828,7 +10828,7 @@ sfapi.fleet = {
    */
   loadAll: async (projectid = 0, catid = 0, subcats = false, prodid = 0, raceid = 0, level = '-', size = '', maxweight = '', everyship = true, queryOnly) => {
     const body = {
-      idcmd: 11,
+      idcmd: 32,
       icmd: 'new',
       'data[projectid]': projectid,
       'data[catid]': catid,

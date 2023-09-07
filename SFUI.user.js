@@ -655,6 +655,10 @@ let sfui_language = {
     ru: 'Сортировать сеты уд в просмотре планеты',
     en: 'Sort AD sets in planet view'
   },
+  SORT_ACTIVE_BUILDS: {
+    ru: 'Сортировать список строительства по оставшемуся времени',
+    en: 'Sort build list by remaining time'
+  },
   SORT_BUILDS_BUTTONS: {
     ru: 'Сортировать кнопки построек в нижней панели планеты/орбиты/космобазы',
     en: 'Sort building\'s buttons on bottom panel of planet/orbit/cosmobase'
@@ -3519,6 +3523,37 @@ sfui.pushPlugins([
     help: {
       img: 'https://i.postimg.cc/Zqh24XhQ/Screenshot-15.jpg',
       text: 'В окне производства (конкретного здания) под мощностью будет выводится время в часах, до заверешения производства'
+    }
+  },
+  {
+    group: pluginsGroups.planet.id,
+    code: 'sortActiveBuilds',
+    type: 'bool',
+    title: sfui_language.SORT_ACTIVE_BUILDS,
+    wndCondition: 'WndPlanet',
+    callback: wnd => {
+      let outerElement_jq = null;
+      if (wnd.activetab.includes('bp-'))
+        outerElement_jq = $('#WndPlanet_buildings-planet');
+      else if (wnd.activetab.includes('bo-'))
+        outerElement_jq = $('#WndPlanet_buildings-orbital');
+      else if (wnd.activetab.includes('sb-'))
+        outerElement_jq = $('#WndPlanet_buildings-spacebase');
+      else return;
+
+      const parentElement_jq = outerElement_jq.find('div > table.data_table > tbody').eq(0);
+      if (!parentElement_jq.length || parentElement_jq[0].dataset.sorted)
+        return;
+
+      const rows_jq = parentElement_jq.children('tr:not(:has(> td[colspan]))');
+      const rowsSorted = rows_jq.map((i, row) => {
+        const secAttrData = row.childNodes[8].getAttribute('sec');
+        const remTime = secAttrData ? parseInt(secAttrData) : Number.MAX_SAFE_INTEGER;
+        return { remTime, row };
+      }).get().sort((r1, r2) => r1.remTime - r2.remTime).map(x => x.row);
+
+      parentElement_jq[0].replaceChildren(...rowsSorted);
+      parentElement_jq[0].dataset.sorted = true;
     }
   },
   {

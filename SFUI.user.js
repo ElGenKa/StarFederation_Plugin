@@ -5186,8 +5186,6 @@ sfui.showSmartFleetEdit = (id) => {
     }
   }
 
-  document.lastSelectedIcon = savedSmartFleetIcon;
-
   const selIconExtStyle = 'style="border: 1px solid blue;"';
   let selIconProcessed = false;
   let iconsRow = ``;

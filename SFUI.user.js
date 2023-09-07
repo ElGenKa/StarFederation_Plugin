@@ -5560,12 +5560,18 @@ sfui.convertDOMElemToCanvas = async (elem) => {
   }).then(canvas => canvas);
 }
 sfui.saveDOMElemToClipboardAsImage = async (elem) => {
-  const imgDataURL = (await sfui.convertDOMElemToCanvas(elem)).toDataURL();
-  const imgData = await fetch(imgDataURL);
-  let blob = await imgData.blob();
-  await navigator.clipboard.write([new ClipboardItem({
-    [blob.type]: blob
-  })]);
+  try {
+    const imgDataURL = (await sfui.convertDOMElemToCanvas(elem)).toDataURL();
+    const imgData = await fetch(imgDataURL);
+    let blob = await imgData.blob();
+    await navigator.clipboard.write([new ClipboardItem({
+      [blob.type]: blob
+    })]);
+    return true;
+  } catch (e) {
+    console.warn('Saving image to clipboard failed: element lost focus during the process');
+  }
+  return false;
 }
 //  Argument 'side' should be True for the left-side project and False - for the right-side.
 sfui.diffChecker_ProjCopyAsImg = async (side) => {

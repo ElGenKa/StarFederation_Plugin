@@ -2474,12 +2474,15 @@ sfui.sortBuildsButtons = (wnd) => {
   if (parentElement.length < 1 || parentElement.dataset?.sorted)
     return;
 
-  const buildsButtons_jq = $(parentElement).children(`div[onclick*="getWindow('WndBuilding')"]`);
+  const buildsButtons_jq = $(parentElement).children(`div[data-hint]`);
   const buildsIdsAndBtnsSorted = buildsButtons_jq.map((i, button) => {
+    const buildData = { absOrder: Number.POSITIVE_INFINITY, button };
     const onclickStr = button.getAttribute('onclick');
-    const buildId = parseInt(/show\(.+bid=(\d+)/g.exec(onclickStr)[1]);
-    const absOrder = sfdata.buildsOrderedIds.indexOf(buildId);
-    return { buildId, absOrder, button };
+    if (onclickStr) {
+      const buildId = parseInt(/show\(.+bid=(\d+)/g.exec(onclickStr)[1]);
+      buildData.absOrder = sfdata.buildsOrderedIds.indexOf(buildId);
+    }
+    return buildData;
   }).get().sort((b1, b2) => {
     if (b1.absOrder === b2.absOrder)
       return 0;
